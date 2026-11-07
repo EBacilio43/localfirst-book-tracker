@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   Pressable,
   Image,
@@ -26,6 +27,7 @@ import {
   Bookmark,
   Camera,
   Layers,
+  ShoppingBag,
 } from 'lucide-react-native';
 import { useScannerStore } from '@/features/scanner/store/scannerStore';
 import { BooksRepository } from '@/db/repositories/booksRepository';
@@ -54,8 +56,11 @@ export default function ScanScreen() {
   } = useScannerStore();
 
   const [selectedModality, setSelectedModality] = useState<'PHYSICAL' | 'DIGITAL'>('PHYSICAL');
+  const [selectedOwnership, setSelectedOwnership] = useState<'OWNED' | 'WISHLIST'>('OWNED');
+  const [wishlistStoreNote, setWishlistStoreNote] = useState<string>('');
+  const [seriesNameInput, setSeriesNameInput] = useState<string>('');
+  const [seriesIndexInput, setSeriesIndexInput] = useState<string>('');
   const [selectedPublisher, setSelectedPublisher] = useState<string>('');
-  const [isManualModalVisible, setIsManualModalVisible] = useState(false);
 
   // Bottom sheet modal state
   const isBottomSheetVisible = !!activeResolvedCandidate;
@@ -72,30 +77,45 @@ export default function ScanScreen() {
 
     try {
       const now = Date.now();
+      const parsedIndex = seriesIndexInput.trim() ? Number(seriesIndexInput.trim()) : null;
+      const isWishlist = selectedOwnership === 'WISHLIST';
+
       const newBook = await BooksRepository.create({
         id: `book-${now}-${Math.random().toString(36).substring(2, 7)}`,
         isbn13: activeResolvedCandidate.isbn13,
         isbn10: activeResolvedCandidate.isbn10,
         title: activeResolvedCandidate.title,
         subtitle: activeResolvedCandidate.subtitle,
+        seriesName: seriesNameInput.trim() || null,
+        seriesIndex: parsedIndex !== null && !Number.isNaN(parsedIndex) ? parsedIndex : null,
         authorsJson: JSON.stringify(activeResolvedCandidate.authors),
         publisher: selectedPublisher || activeResolvedCandidate.publisher || 'Editorial no especificada',
         description: activeResolvedCandidate.description,
         coverUri: activeResolvedCandidate.coverUri,
         pageCount: activeResolvedCandidate.pageCount,
         modality: selectedModality,
-        ownership: 'OWNED',
+        ownership: isWishlist ? 'WISHLIST' : 'OWNED',
         metadataStatus: activeResolvedCandidate.title === 'Libro sin conexión' ? 'PENDING_OFFLINE_SYNC' : 'COMPLETE',
-        currentStatus: 'POR_LEER',
+        currentStatus: isWishlist ? 'WISHLIST' : 'POR_LEER',
         currentPage: 0,
         currentPercentage: 0,
+        wishlistStoreNote: isWishlist && wishlistStoreNote.trim() ? wishlistStoreNote.trim() : null,
         isSpoiler: false,
         createdAt: now,
         updatedAt: now,
       });
 
+      setWishlistStoreNote('');
+      setSeriesNameInput('');
+      setSeriesIndexInput('');
+      setSelectedOwnership('OWNED');
       clearActiveCandidate();
-      Alert.alert('¡Libro Guardado!', `"${newBook.title}" ya está en tu librero.`);
+      Alert.alert(
+        isWishlist ? 'Agregado a Wishlist' : 'Libro Guardado',
+        isWishlist
+          ? `"${newBook.title}" se guardó en tu lista de deseos.`
+          : `"${newBook.title}" ya está en tu librero.`
+      );
     } catch (err) {
       Alert.alert('Error', 'No se pudo guardar el libro en la base de datos local.');
     }
@@ -330,6 +350,65 @@ export default function ScanScreen() {
                   </Pressable>
                 </View>
 
+                {/* Destino: Mi Librero vs Wishlist */}
+                <Text style={styles.sheetSectionTitle}>Destino del registro</Text>
+                <View style={styles.modalityToggle}>
+                  <Pressable
+                    onPress={() => setSelectedOwnership('OWNED')}
+                    style={[styles.modalityBtn, selectedOwnership === 'OWNED' && styles.modalityBtnActive]}
+                  >
+                    <Bookmark size={16} color={selectedOwnership === 'OWNED' ? '#FFFFFF' : colors.light.textMuted} />
+                    <Text style={[styles.modalityBtnText, selectedOwnership === 'OWNED' && styles.modalityBtnTextActive]}>
+                      En Mi Librero
+                    </Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => setSelectedOwnership('WISHLIST')}
+                    style={[styles.modalityBtn, selectedOwnership === 'WISHLIST' && styles.modalityBtnActive]}
+                  >
+                    <ShoppingBag size={16} color={selectedOwnership === 'WISHLIST' ? '#FFFFFF' : colors.light.textMuted} />
+                    <Text style={[styles.modalityBtnText, selectedOwnership === 'WISHLIST' && styles.modalityBtnTextActive]}>
+                      Para Wishlist
+                    </Text>
+                  </Pressable>
+                </View>
+
+                {selectedOwnership === 'WISHLIST' ? (
+                  <View style={styles.publisherRow}>
+                    <Text style={styles.sheetSectionTitle}>Tienda y precio estimado</Text>
+                    <TextInput
+                      value={wishlistStoreNote}
+                      onChangeText={setWishlistStoreNote}
+                      placeholder="Ej. Gandhi Coyoacán · $385 MXN"
+                      placeholderTextColor={colors.light.textSubtle}
+                      style={styles.textInputField}
+                    />
+                  </View>
+                ) : null}
+
+                {/* Saga / Serie opcional */}
+                <View style={styles.publisherRow}>
+                  <Text style={styles.sheetSectionTitle}>Saga / Serie (opcional)</Text>
+                  <View style={styles.sagaInputsRow}>
+                    <TextInput
+                      value={seriesNameInput}
+                      onChangeText={setSeriesNameInput}
+                      placeholder="Nombre de la saga (ej. Dune)"
+                      placeholderTextColor={colors.light.textSubtle}
+                      style={[styles.textInputField, { flex: 1 }]}
+                    />
+                    <TextInput
+                      value={seriesIndexInput}
+                      onChangeText={setSeriesIndexInput}
+                      placeholder="# Tomo"
+                      placeholderTextColor={colors.light.textSubtle}
+                      keyboardType="decimal-pad"
+                      style={[styles.textInputField, { width: 84, textAlign: 'center' }]}
+                    />
+                  </View>
+                </View>
+
                 {/* Editorial */}
                 {activeResolvedCandidate.publisher ? (
                   <View style={styles.publisherRow}>
@@ -346,7 +425,11 @@ export default function ScanScreen() {
                   variant="primary"
                   onPress={handleSaveActiveCandidate}
                   leftIcon={<Check size={20} color="#FFFFFF" />}
-                  title="Confirmar y Guardar en Librero"
+                  title={
+                    selectedOwnership === 'WISHLIST'
+                      ? 'Guardar en Wishlist'
+                      : 'Confirmar y Guardar en Librero'
+                  }
                   style={styles.confirmButton}
                 />
               </ScrollView>
@@ -674,6 +757,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: colors.light.badgeText,
+  },
+  textInputField: {
+    backgroundColor: colors.light.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: colors.light.text,
+  },
+  sagaInputsRow: {
+    flexDirection: 'row',
+    gap: 8,
   },
   confirmButton: {
     marginTop: 8,
