@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "BaciBooks",
-    "slug": "bacibooks",
-    "version": "0.3.0",
+    "name": "BookTracker",
+    "slug": "localfirst-book-tracker",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "bacibooks",
+    "scheme": "booktracker",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.bacibooks.app"
+      "bundleIdentifier": "com.ebacilio.booktracker"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#FAF7F2"
       },
-      "package": "com.bacibooks.app",
+      "package": "com.ebacilio.booktracker",
       "predictiveBackGestureEnabled": false
     },
     "web": {
