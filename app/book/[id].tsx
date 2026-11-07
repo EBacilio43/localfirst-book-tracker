@@ -26,15 +26,23 @@ import {
   ShoppingBag,
   Clock,
   Award,
+  ArrowLeftRight,
 } from 'lucide-react-native';
 import { BooksRepository } from '@/db/repositories/booksRepository';
 import { ReadingLogsRepository } from '@/db/repositories/readingLogsRepository';
 import { ReadingSessionsRepository } from '@/db/repositories/readingSessionsRepository';
 import { ShelvesRepository } from '@/db/repositories/shelvesRepository';
+import { BookQuotesRepository } from '@/db/repositories/bookQuotesRepository';
+import {
+  BookLoansRepository,
+  evaluateLoanDueStatus,
+} from '@/db/repositories/bookLoansRepository';
 import { Book } from '@/db/schema/books';
 import { Shelf } from '@/db/schema/shelves';
 import { ReadingLog } from '@/db/schema/readingLogs';
 import { ReadingSession } from '@/db/schema/readingSessions';
+import { BookQuote } from '@/db/schema/bookQuotes';
+import { BookLoan } from '@/db/schema/bookLoans';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
 import { BookDetailSkeleton } from '@/shared/components/Skeleton';
@@ -50,6 +58,11 @@ import {
   ShelvesManagerModal,
   DigitalCollectionKey,
 } from '@/features/shelves/components/ShelvesManagerModal';
+import { BookQuotesAndGlossarySection } from '@/features/quotes-ocr/components/BookQuotesAndGlossarySection';
+import { QuoteOcrModal } from '@/features/quotes-ocr/components/QuoteOcrModal';
+import { QuotePostcardModal } from '@/features/quotes-ocr/components/QuotePostcardModal';
+import { LoanCoverRibbon } from '@/features/loans/components/LoanCoverRibbon';
+import { LoanManagerModal } from '@/features/loans/components/LoanManagerModal';
 import { useReaderPreferencesStore } from '@/features/reading-tracker/store/readerPreferencesStore';
 
 type BookStatus =
@@ -116,6 +129,9 @@ export default function BookDetailScreen() {
   const [readingSessions, setReadingSessions] = useState<ReadingSession[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [multipleEditions, setMultipleEditions] = useState<Book[]>([]);
+  const [bookQuotes, setBookQuotes] = useState<BookQuote[]>([]);
+  const [activeLoan, setActiveLoan] = useState<BookLoan | null>(null);
+  const [loanHistory, setLoanHistory] = useState<BookLoan[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
@@ -123,24 +139,42 @@ export default function BookDetailScreen() {
     useState(false);
   const [isTimerModalVisible, setIsTimerModalVisible] = useState(false);
   const [isShelvesModalVisible, setIsShelvesModalVisible] = useState(false);
+  const [isQuoteOcrModalVisible, setIsQuoteOcrModalVisible] = useState(false);
+  const [selectedPostcardQuote, setSelectedPostcardQuote] =
+    useState<BookQuote | null>(null);
+  const [isLoanModalVisible, setIsLoanModalVisible] = useState(false);
   const [isSpoilerNoteRevealed, setIsSpoilerNoteRevealed] = useState(false);
 
   const loadBookData = useCallback(async () => {
     if (!id) return;
     try {
-      const [foundBook, logs, allSessions, allShelves, editions] =
-        await Promise.all([
-          BooksRepository.getById(id),
-          ReadingLogsRepository.getByBookId(id),
-          ReadingSessionsRepository.getAll(),
-          ShelvesRepository.getAll(),
-          BooksRepository.getMultipleEditions(id),
-        ]);
+      const [
+        foundBook,
+        logs,
+        allSessions,
+        allShelves,
+        editions,
+        quotesList,
+        currentActiveLoan,
+        allBookLoans,
+      ] = await Promise.all([
+        BooksRepository.getById(id),
+        ReadingLogsRepository.getByBookId(id),
+        ReadingSessionsRepository.getAll(),
+        ShelvesRepository.getAll(),
+        BooksRepository.getMultipleEditions(id),
+        BookQuotesRepository.getByBookId(id),
+        BookLoansRepository.getActiveByBookId(id),
+        BookLoansRepository.getAll({ bookId: id }),
+      ]);
       setBook(foundBook);
       setReadingLogs(logs);
       setReadingSessions(allSessions);
       setShelves(allShelves);
       setMultipleEditions(editions);
+      setBookQuotes(quotesList);
+      setActiveLoan(currentActiveLoan);
+      setLoanHistory(allBookLoans.filter((l) => l.returnedAt !== null));
     } catch (err) {
       console.error('Error cargando detalle del libro:', err);
     } finally {
@@ -331,6 +365,100 @@ export default function BookDetailScreen() {
     }
   };
 
+  // Manejo de citas OCR y glosario de personajes
+  const handleSaveQuote = async (data: {
+    entryType: 'QUOTE' | 'CHARACTER' | 'GLOSSARY' | 'NOTE';
+    content: string;
+    pageNumber: number | null;
+    chapterOrSection: string | null;
+    personalNote: string | null;
+    highlightColor: string;
+    isSpoiler: boolean;
+  }) => {
+    if (!book) return;
+    try {
+      await BookQuotesRepository.create({
+        bookId: book.id,
+        entryType: data.entryType,
+        content: data.content,
+        pageNumber: data.pageNumber,
+        chapterOrSection: data.chapterOrSection,
+        personalNote: data.personalNote,
+        highlightColor: data.highlightColor,
+        isSpoiler: data.isSpoiler,
+      });
+      setIsQuoteOcrModalVisible(false);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar la cita o nota');
+    }
+  };
+
+  const handleToggleFavoriteQuote = async (quoteId: string) => {
+    try {
+      await BookQuotesRepository.toggleFavorite(quoteId);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo actualizar favorito');
+    }
+  };
+
+  const handleDeleteQuote = async (quoteId: string) => {
+    try {
+      await BookQuotesRepository.delete(quoteId);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo eliminar la entrada');
+    }
+  };
+
+  // Manejo de préstamos bidireccionales
+  const handleCreateLoan = async (params: {
+    loanDirection: 'LENT_OUT' | 'BORROWED_IN';
+    borrowerName: string;
+    borrowerContact?: string;
+    dueDays: number;
+    notes?: string;
+  }) => {
+    if (!book) return;
+    try {
+      const now = Date.now();
+      const dueDate = now + params.dueDays * 86400000;
+      await BookLoansRepository.createLoan({
+        bookId: book.id,
+        loanDirection: params.loanDirection,
+        borrowerName: params.borrowerName,
+        borrowerContact: params.borrowerContact ?? null,
+        loanedAt: now,
+        dueDate,
+        notes: params.notes ?? null,
+      });
+      setIsLoanModalVisible(false);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo registrar el préstamo');
+    }
+  };
+
+  const handleMarkLoanReturned = async (loanId: string) => {
+    try {
+      await BookLoansRepository.markAsReturned(loanId);
+      setIsLoanModalVisible(false);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo marcar el préstamo como devuelto');
+    }
+  };
+
+  const handleExtendLoan = async (loanId: string, extraDays: number) => {
+    try {
+      await BookLoansRepository.extendDueDate(loanId, extraDays);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo extender el plazo del préstamo');
+    }
+  };
+
   const confirmDelete = () => {
     Alert.alert(
       'Eliminar libro',
@@ -450,6 +578,7 @@ export default function BookDetailScreen() {
                 <Bookmark size={48} color={colors.light.primary} />
               </View>
             )}
+            <LoanCoverRibbon loan={activeLoan} />
           </View>
 
           <Text style={styles.title}>{book.title}</Text>
@@ -716,6 +845,67 @@ export default function BookDetailScreen() {
           )}
         </View>
 
+        {/* Control de Préstamos Bidireccionales (Solo libros físicos fuera de Wishlist) */}
+        {book.modality === 'PHYSICAL' && !isWishlist ? (
+          <View style={styles.card}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionTitle}>Control de Préstamos</Text>
+              <SafeButton
+                title={activeLoan ? 'Gestionar' : 'Registrar'}
+                variant="outline"
+                size="sm"
+                leftIcon={
+                  <ArrowLeftRight size={14} color={colors.light.primary} />
+                }
+                onPress={() => setIsLoanModalVisible(true)}
+              />
+            </View>
+
+            {activeLoan ? (
+              <View style={styles.locationDisplayRow}>
+                <View style={styles.locationDetails}>
+                  <Text style={styles.locationMainTitle}>
+                    {activeLoan.loanDirection === 'LENT_OUT'
+                      ? `Prestado a ${activeLoan.borrowerName}`
+                      : `Prestado por ${activeLoan.borrowerName}`}
+                  </Text>
+                  <Text style={styles.locationSubTitle}>
+                    {(() => {
+                      const due = evaluateLoanDueStatus(activeLoan);
+                      if (due.status === 'OVERDUE') {
+                        return `Vencido hace ${Math.abs(due.daysRemaining)} días`;
+                      }
+                      if (due.status === 'DUE_SOON') {
+                        return `Próximo a vencer (${due.daysRemaining}d restantes)`;
+                      }
+                      return `En plazo (${due.daysRemaining}d restantes)`;
+                    })()}
+                  </Text>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.unassignedLocationBox}>
+                <ArrowLeftRight size={18} color={colors.light.textMuted} />
+                <Text style={styles.unassignedLocationText}>
+                  En tu estantería · Sin préstamo activo
+                </Text>
+              </View>
+            )}
+          </View>
+        ) : null}
+
+        {/* Sección de Citas OCR, Glosario de Personajes sin Spoilers y Postales */}
+        {!isWishlist ? (
+          <BookQuotesAndGlossarySection
+            quotes={bookQuotes}
+            currentBookPage={book.currentPage || 0}
+            onOpenOcrModal={() => setIsQuoteOcrModalVisible(true)}
+            onOpenPostcard={(quote) => setSelectedPostcardQuote(quote)}
+            onToggleFavorite={handleToggleFavoriteQuote}
+            onDeleteQuote={handleDeleteQuote}
+          />
+        ) : null}
+
         {/* Historial de Lecturas Registradas */}
         {readingLogs.length > 0 ? (
           <View style={styles.card}>
@@ -845,6 +1035,43 @@ export default function BookDetailScreen() {
           userAverageSpeed={readerVelocity.pagesPerHour}
           onClose={() => setIsTimerModalVisible(false)}
           onSaveSession={handleSaveTimedSession}
+        />
+      ) : null}
+
+      {/* Modal de Escáner OCR de Citas y Glosario de Personajes */}
+      {book ? (
+        <QuoteOcrModal
+          visible={isQuoteOcrModalVisible}
+          bookTitle={book.title}
+          defaultPage={book.currentPage || undefined}
+          onClose={() => setIsQuoteOcrModalVisible(false)}
+          onSaveQuote={handleSaveQuote}
+        />
+      ) : null}
+
+      {/* Modal de Postal Literaria Compartible */}
+      {book ? (
+        <QuotePostcardModal
+          visible={selectedPostcardQuote !== null}
+          quote={selectedPostcardQuote}
+          bookTitle={book.title}
+          bookAuthor={authorsLabel}
+          bookPublisher={book.publisher}
+          onClose={() => setSelectedPostcardQuote(null)}
+        />
+      ) : null}
+
+      {/* Modal de Control de Préstamos Bidireccionales */}
+      {book ? (
+        <LoanManagerModal
+          visible={isLoanModalVisible}
+          bookTitle={book.title}
+          activeLoan={activeLoan}
+          loanHistory={loanHistory}
+          onClose={() => setIsLoanModalVisible(false)}
+          onCreateLoan={handleCreateLoan}
+          onMarkReturned={handleMarkLoanReturned}
+          onExtendLoan={handleExtendLoan}
         />
       ) : null}
     </View>
