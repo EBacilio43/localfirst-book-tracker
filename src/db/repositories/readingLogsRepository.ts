@@ -30,6 +30,16 @@ function generateReadingLogId(): string {
 
 export class ReadingLogsRepository {
   /**
+   * Obtiene todos los registros de lectura almacenados en la base de datos local.
+   */
+  static async getAll(): Promise<ReadingLog[]> {
+    return db
+      .select()
+      .from(readingLogs)
+      .orderBy(asc(readingLogs.readNumber));
+  }
+
+  /**
    * Obtiene todos los registros de lectura de un libro ordenados por numero de lectura ascendente.
    */
   static async getByBookId(bookId: string): Promise<ReadingLog[]> {
