@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BaciBooks — Reporte de Funcionalidades Implementadas (Fase 1)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 14mm 14mm 14mm 14mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #FFFFFF;
+      color: #1C1917;
+      font-size: 10pt;
+      line-height: 1.45;
+    }
+    .header {
+      border-bottom: 2.5px solid #1E4635;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .brand-title {
+      font-size: 22pt;
+      font-weight: 800;
+      color: #1E4635;
+      letter-spacing: -0.5px;
+    }
+    .brand-subtitle {
+      font-size: 10pt;
+      color: #78716C;
+      font-weight: 500;
+      margin-top: 2px;
+    }
+    .meta-box {
+      text-align: right;
+      font-size: 8.5pt;
+      color: #78716C;
+    }
+    .meta-box strong {
+      color: #1C1917;
+    }
+    .badge {
+      display: inline-block;
+      background-color: #EFE9DF;
+      color: #1E4635;
+      font-weight: 700;
+      font-size: 7.5pt;
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+    }
+    .intro-banner {
+      background-color: #FAF7F2;
+      border: 1px solid #EBE5DC;
+      border-left: 4px solid #1E4635;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+    }
+    .intro-banner p {
+      font-size: 9.5pt;
+      color: #44403C;
+      line-height: 1.4;
+    }
+    .section-block {
+      margin-bottom: 16px;
+      page-break-inside: avoid;
+    }
+    h2 {
+      font-size: 12pt;
+      font-weight: 700;
+      color: #1E4635;
+      border-bottom: 1px solid #EBE5DC;
+      padding-bottom: 4px;
+      margin-bottom: 8px;
+    }
+    .section-desc {
+      font-size: 9pt;
+      color: #78716C;
+      margin-bottom: 8px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .feature-card {
+      background: #FAFAFA;
+      border: 1px solid #EBE5DC;
+      border-radius: 6px;
+      padding: 8px 10px;
+      page-break-inside: avoid;
+    }
+    .feature-card h3 {
+      font-size: 10pt;
+      font-weight: 700;
+      color: #1C1917;
+      margin-bottom: 3px;
+    }
+    .feature-card p {
+      font-size: 8.8pt;
+      color: #44403C;
+      line-height: 1.35;
+    }
+    .feature-list {
+      list-style-type: none;
+    }
+    .feature-list li {
+      position: relative;
+      padding-left: 14px;
+      margin-bottom: 5px;
+      font-size: 9pt;
+      color: #292524;
+      line-height: 1.35;
+    }
+    .feature-list li::before {
+      content: "•";
+      position: absolute;
+      left: 1px;
+      color: #B85F30;
+      font-size: 13pt;
+      line-height: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid #EBE5DC;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #FAF7F2;
+      color: #1E4635;
+      font-weight: 700;
+    }
+    tr:nth-child(even) td {
+      background-color: #FCFBF9;
+    }
+    .tag-pill {
+      display: inline-block;
+      font-size: 7.5pt;
+      font-weight: 700;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .footer {
+      margin-top: 18px;
+      border-top: 1px solid #EBE5DC;
+      padding-top: 8px;
+      font-size: 8pt;
+      color: #78716C;
+      display: flex;
+      justify-content: space-between;
+      page-break-inside: avoid;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado Principal -->
+  <div class="header">
+    <div>
+      <div class="brand-title">BaciBooks</div>
+      <div class="brand-subtitle">Biblioteca Personal Inteligente — Resumen de Funcionalidades</div>
+    </div>
+    <div class="meta-box">
+      <div class="badge">Versión 0.1.0 — Fase 1</div>
+      <div><strong>Fecha:</strong> Noviembre 2026</div>
+      <div><strong>Estado:</strong> Implementado y Verificado</div>
+    </div>
+  </div>
+
+  <!-- Banner de Introducción -->
+  <div class="intro-banner">
+    <p>
+      Este documento presenta la síntesis ejecutiva de las funcionalidades desarrolladas y validadas en la <strong>Fase 1 (Core de Persistencia, Catálogo y Escaneo ISBN)</strong>. La aplicación está construida sobre una arquitectura <em>Local-First</em> con <strong>React Native, Expo SDK 52, TypeScript estricto, Drizzle ORM y SQLite FTS5</strong>, garantizando velocidad inmediata, funcionamiento 100% fuera de línea e integridad de datos.
+    </p>
+  </div>
+
+  <!-- 1. Gestión de Biblioteca y Ejemplares -->
+  <div class="section-block">
+    <h2>1. Gestión Integral de Biblioteca (Físicos y Digitales)</h2>
+    <div class="section-desc">Organización unificada para colecciones mixtas de libros en papel y libros electrónicos.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Soporte Dual (Físico y eBook)</h3>
+        <p>Registro diferenciado por modalidad: libros físicos (Tapa Dura, Rústica, Bolsillo, Edición Especial) y digitales (Kindle, Kobo, ePub/PDF, Apple Books), con iconografía vectorial distintiva.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Agrupación Automática por Sagas</h3>
+        <p>Detección y consolidación de series literarias (ej. Dune, El Señor de los Anillos) con ordenación numérica estricta (#1, #1.5, #2) y visualización del avance en carrusel horizontal.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Control de Estados de Lectura</h3>
+        <p>Transición inmediata entre estados de lectura: Por leer, Leyendo, En pausa, Leído, Abandonado y Deseado (Wishlist), con actualización reactiva en pantalla.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Ficha Técnica y Sinopsis</h3>
+        <p>Vista detallada por libro con metadatos normalizados (páginas, idioma, editorial, ISBN-13), visualización de portada en proporción 2:3 y sinopsis expandible.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Motor de Escaneo ISBN -->
+  <div class="section-block">
+    <h2>2. Motor de Escaneo y Registro con Cámara</h2>
+    <div class="section-desc">Captura ultrarrápida de códigos de barras a 60 fps con blindaje contra duplicados.</div>
+    <ul class="feature-list">
+      <li><strong>Validación Estándar Bookland EAN-13:</strong> Comprobación de dígito verificador matemático y prefijos oficiales 978 y 979, ignorando etiquetas internas de tiendas (códigos 200/201).</li>
+      <li><strong>Modo Individual con Confirmación en 2 Toques:</strong> Apertura fluida de hoja inferior (Bottom Sheet) que permite verificar la portada y seleccionar la editorial exacta antes de guardar.</li>
+      <li><strong>Modo Ráfaga (Burst Mode) con Bandeja en Cola:</strong> Escaneo continuo de múltiples libros sin pausar la cámara (ideal para registrar estanterías completas o ferias de libros), con guardado masivo en lote.</li>
+      <li><strong>Enfriamiento Anti-Rebote (Cooldown 3,000 ms):</strong> Memoria temporal por código ISBN para evitar relecturas accidentales por frame mientras el libro permanece frente a la cámara.</li>
+      <li><strong>Detección de Duplicados en Tiempo Real:</strong> Alerta preventiva si el ejemplar ya existe en la biblioteca local, ofreciendo registrar una edición adicional o consultar su ficha actual.</li>
+    </ul>
+  </div>
+
+  <!-- 3. Cascada de Catálogos Externos -->
+  <div class="section-block">
+    <h2>3. Resolución de Metadatos y Cascada de Catálogos</h2>
+    <div class="section-desc">Cruce inteligente de servicios públicos con validación estricta en tiempo de ejecución.</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 24%;">Componente</th>
+          <th style="width: 44%;">Mecanismo de Operación</th>
+          <th style="width: 32%;">Beneficio para el Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Google Books API</strong></td>
+          <td>Extracción de sinopsis completas, conteo de páginas verificado, categorías y autores.</td>
+          <td>Fichas con descripciones editoriales enriquecidas.</td>
+        </tr>
+        <tr>
+          <td><strong>Open Library API</strong></td>
+          <td>Resolución de portadas de alta resolución (M/L) y sellos editoriales exactos en español.</td>
+          <td>Portadas nítidas y fieles a la edición real adquirida.</td>
+        </tr>
+        <tr>
+          <td><strong>Fusión Campo por Campo</strong></td>
+          <td>Combinación automática de los mejores atributos devueltos por cada proveedor concurrente.</td>
+          <td>Máxima completitud de datos sin duplicar llamadas.</td>
+        </tr>
+        <tr>
+          <td><strong>Validación con Zod</strong></td>
+          <td>Comprobación de esquemas tipados en tiempo de ejecución para cada respuesta HTTP.</td>
+          <td>Cero cierres inesperados por datos nulos o malformados.</td>
+        </tr>
+        <tr>
+          <td><strong>Cola Offline</strong></td>
+          <td>Registro inmediato con estado pendiente si no hay conexión a internet disponible.</td>
+          <td>El escaneo nunca se bloquea ante cortes de red.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 4. Búsqueda Instantánea FTS5 -->
+  <div class="section-block">
+    <h2>4. Búsqueda Instantánea Local (SQLite FTS5)</h2>
+    <div class="section-desc">Localización en milisegundos de cualquier libro sin depender de señal celular.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Tolerancia a Diacríticos (Acentos)</h3>
+        <p>Configuración FTS5 con tokenizador <code>unicode61 remove_diacritics 2</code>, permitiendo encontrar títulos como "Crónicas" buscando simplemente "cronicas".</p>
+      </div>
+      <div class="feature-card">
+        <h3>Búsqueda Multicriterio</h3>
+        <p>Indexación unificada por título, subtítulo, autor, saga y sello editorial con coincidencia por prefijos en tiempo real.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Debounce Adaptativo (250 ms)</h3>
+        <p>Retardo optimizado en la barra de texto para evitar sobrecarga del hilo de interfaz mientras el usuario escribe.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Sincronización por Triggers</h3>
+        <p>Actualización automática del índice virtual FTS5 ante altas, bajas o modificaciones en la tabla principal de libros.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Resiliencia de UX y Arquitectura de Software -->
+  <div class="section-block">
+    <h2>5. Blindaje de Interfaz y Estándares de Ingeniería</h2>
+    <div class="section-desc">Decisiones técnicas que garantizan estabilidad de nivel producción.</div>
+    <ul class="feature-list">
+      <li><strong>Protección Anti-Doble Toque (SafeButton / useSafePress):</strong> Bloqueo síncrono por referencia en memoria desde el milisegundo cero (0 ms) con enfriamiento de 500 ms y respuesta háptica, impidiendo registros dobles en base de datos.</li>
+      <li><strong>Persistencia Local con Drizzle ORM:</strong> Esquemas relacionales totalmente tipados sobre SQLite con modo Write-Ahead Logging (WAL) activo para concurrencia segura y lecturas instantáneas.</li>
+      <li><strong>Iconografía Vectorial Lucide:</strong> Eliminación completa de emojis en la interfaz gráfica; navegación estilizada mediante iconos vectoriales consistentes y sobrios (lucide-react-native).</li>
+      <li><strong>Lenguaje Editorial Humanizado:</strong> Ausencia total de términos informáticos en textos visibles al usuario, priorizando frases cálidas y comprensibles para lectores.</li>
+    </ul>
+  </div>
+
+  <!-- 6. Métricas de Calidad y Suite de Pruebas -->
+  <div class="section-block">
+    <h2>6. Indicadores de Calidad del Código (Testing)</h2>
+    <div class="section-desc">Verificación automatizada continua sobre ramas de trabajo.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Módulo de Pruebas</th>
+          <th>Archivo</th>
+          <th>Casos Evaluados</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Utilidades ISBN</strong></td>
+          <td><code>tests/unit/isbn.test.ts</code></td>
+          <td>Validación ISBN-10/13, conversión, filtro de códigos de tienda y normalización. (18 pruebas)</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">100% Pasadas</span></td>
+        </tr>
+        <tr>
+          <td><strong>Contratos de APIs</strong></td>
+          <td><code>tests/api/catalogResolver.test.ts</code></td>
+          <td>Cascada Google Books y Open Library, fusión de campos y tolerancia a fallos. (6 pruebas)</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">100% Pasadas</span></td>
+        </tr>
+        <tr>
+          <td><strong>Repositorio de Datos</strong></td>
+          <td><code>tests/unit/booksRepository.test.ts</code></td>
+          <td>Operaciones CRUD, verificación de duplicados y agrupación numérica de sagas. (5 pruebas)</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">100% Pasadas</span></td>
+        </tr>
+        <tr>
+          <td><strong>Análisis de Tipos</strong></td>
+          <td><code>tsconfig.json (strict: true)</code></td>
+          <td>Compilación completa de TypeScript con prohibición estricta de tipos 'any'.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">0 Errores</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pie de Página -->
+  <div class="footer">
+    <div>BaciBooks Mobile App — Proyecto Open Source / Portafolio Senior</div>
+    <div>Rama git: <code>develop</code> | Licencia Privada / Confidencial</div>
+  </div>
+
+</body>
+</html>
