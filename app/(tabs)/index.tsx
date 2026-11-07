@@ -253,8 +253,10 @@ export default function LibraryScreen() {
       {/* Encabezado Principal */}
       <View style={styles.header}>
         <View style={styles.headerTitleCol}>
-          <Text style={styles.headerTitle}>Mi Librero</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            Mi Librero
+          </Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>
             {ownedBooks.length}{' '}
             {ownedBooks.length === 1 ? 'ejemplar' : 'ejemplares'}
             {totalSagasCount > 0
@@ -271,25 +273,29 @@ export default function LibraryScreen() {
           <SafeButton
             size="sm"
             variant="outline"
+            style={styles.headerIconButton}
             onPress={() => setIsCloudModalVisible(true)}
-            leftIcon={<Cloud size={15} color={colors.light.primary} />}
-            title="Respaldo"
+            leftIcon={<Cloud size={18} color={colors.light.primary} />}
+            testID="cloud-sync-button"
           />
 
           <SafeButton
             size="sm"
             variant="outline"
+            style={styles.headerIconButton}
             onPress={() => setIsTbrModalVisible(true)}
-            leftIcon={<Compass size={16} color={colors.light.primary} />}
-            title="¿Qué leo hoy?"
+            leftIcon={<Compass size={18} color={colors.light.primary} />}
+            testID="tbr-roulette-button"
           />
 
           <SafeButton
             size="sm"
             variant="primary"
+            style={styles.headerAddButton}
             onPress={() => router.push('/scan')}
             leftIcon={<Plus size={16} color="#FFFFFF" />}
             title="Agregar"
+            testID="add-book-button"
           />
         </View>
       </View>
@@ -997,9 +1003,10 @@ const styles = StyleSheet.create({
   headerTitleCol: {
     flex: 1,
     marginRight: 8,
+    justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '800',
     color: colors.light.text,
     letterSpacing: -0.5,
@@ -1014,6 +1021,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  headerIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAddButton: {
+    height: 38,
+    paddingHorizontal: 12,
+    paddingVertical: 0,
+    borderRadius: 19,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   filtersWrapper: {
     paddingVertical: 6,

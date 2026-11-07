@@ -2,7 +2,7 @@
   "expo": {
     "name": "BaciBooks",
     "slug": "bacibooks",
-    "version": "0.3.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "bacibooks",
@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#FAF7F2"
       },
-      "package": "com.bacibooks.app",
-      "predictiveBackGestureEnabled": false
+      "package": "com.bacibooks.app"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -31,7 +30,8 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true
