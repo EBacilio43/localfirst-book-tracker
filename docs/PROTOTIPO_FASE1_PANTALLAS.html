@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fase 1 (v0.1.0) — Diseño UI v2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+input.st{display:none}
+label{cursor:pointer}
+.wrap{max-width:400px;margin:0 auto}
+.hscroll{scrollbar-width:none}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Iconos Lucide (SVG Vectoriales) ---------- */
+.lucide{display:inline-block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;vertical-align:-2px}
+.lucide-tab{width:20px;height:20px;margin-bottom:2px}
+.lucide-lg{width:22px;height:22px}
+.lucide-sm{width:13px;height:13px;vertical-align:-1px}
+
+/* ---------- Controles del prototipo (no son parte de la app) ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.four{grid-template-columns:repeat(4,1fr)}
+.tg{display:block;text-align:center;font-size:12px;font-weight:600;padding:9px 4px;border-radius:9px;color:#A8A29E}
+.states{display:none}
+.states-title{font-size:12px;color:#A8A29E;margin-top:10px}
+#scr-scan:checked ~ .wrap .states{display:block}
+#scr-lib:checked ~ .wrap .chrome label[for="scr-lib"],
+#scr-empty:checked ~ .wrap .chrome label[for="scr-empty"],
+#scr-scan:checked ~ .wrap .chrome label[for="scr-scan"],
+#scr-burst:checked ~ .wrap .chrome label[for="scr-burst"]{background:#B85F30;color:#fff}
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+#st-found:checked ~ .wrap .chrome label[for="st-found"],
+#st-dup:checked ~ .wrap .chrome label[for="st-dup"],
+#st-off:checked ~ .wrap .chrome label[for="st-off"],
+#st-store:checked ~ .wrap .chrome label[for="st-store"]{background:#3A3530;color:#F3EFE7}
+
+/* ---------- Teléfono y tokens de tema ---------- */
+.phone{--bg:#FAF7F2;--fg:#1C1917;--muted:#6B6560;--surf:#EFEAE1;--card:#FFFDF8;--line:#D8CFC0;--pri:#1E4635;--pri-fg:#FAF7F2;--acc:#B85F30;
+  border-radius:36px;border:5px solid #2E2A27;background:var(--bg);color:var(--fg);overflow:hidden;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+#thm-night:checked ~ .wrap .phone{--bg:#161412;--fg:#F3EFE7;--muted:#A8A29E;--surf:#221F1C;--card:#34302B;--line:#3F3933;--pri:#2E6A50;--acc:#C96E3C}
+.scr{display:none;min-height:720px;flex-direction:column}
+#scr-lib:checked ~ .wrap #s-lib,
+#scr-empty:checked ~ .wrap #s-empty,
+#scr-scan:checked ~ .wrap #s-scan,
+#scr-burst:checked ~ .wrap #s-burst{display:flex}
+
+.sbar{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 20px 12px}
+.h1{font-size:26px;font-weight:700;letter-spacing:-.3px}
+.muted{color:var(--muted);font-size:12px}
+
+/* Botón único que alterna Cuadrícula / Sagas */
+.vt{display:none;align-items:center;min-height:40px;padding:0 14px;border-radius:999px;background:var(--surf);color:var(--fg);font-size:12px;font-weight:600;white-space:nowrap}
+#vw-grid:checked ~ .wrap .vt[for="vw-saga"],
+#vw-saga:checked ~ .wrap .vt[for="vw-grid"]{display:inline-flex}
+
+/* Control segmentado */
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surf);border-radius:14px;padding:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg label{min-height:36px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
+.seg-flt{margin:0 20px 14px}
+#flt-all:checked ~ .wrap .seg-flt label[for="flt-all"],
+#flt-phys:checked ~ .wrap .seg-flt label[for="flt-phys"],
+#flt-ebook:checked ~ .wrap .seg-flt label[for="flt-ebook"],
+#md-phys:checked ~ .wrap .seg-mod label[for="md-phys"],
+#md-ebook:checked ~ .wrap .seg-mod label[for="md-ebook"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+/* ---------- Portadas ---------- */
+.shelf{flex:1;padding:2px 20px 12px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 12px}
+.cv{aspect-ratio:2/3;border-radius:5px 10px 10px 5px;padding:10px 8px;color:#FAF7F2;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;
+  box-shadow:0 6px 14px rgba(0,0,0,.2),inset 4px 0 0 rgba(255,255,255,.08)}
+.ct{font-size:12px;font-weight:700;line-height:1.2}
+.ca{font-size:12px;opacity:.8;margin-top:2px}
+.sn{position:absolute;top:7px;left:7px;background:rgba(0,0,0,.42);font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px}
+.eb{position:absolute;top:7px;right:7px;background:rgba(250,247,242,.94);color:#1C1917;font-size:12px;font-weight:700;padding:1px 6px;border-radius:6px}
+.cv.pend{background:var(--surf);color:var(--muted);border:2px dashed var(--line);box-shadow:none;justify-content:center;align-items:center;text-align:center;gap:4px}
+.cv.ghost{background:transparent;color:var(--muted);border:2px dashed var(--line);box-shadow:none;justify-content:center;align-items:center;text-align:center}
+.c1{background:linear-gradient(160deg,#9A4B26,#4A200C)}
+.c2{background:linear-gradient(160deg,#85582A,#3E260D)}
+.c3{background:linear-gradient(160deg,#6D4C3D,#2E1E17)}
+.c4{background:linear-gradient(160deg,#2D3A45,#141B21)}
+.c5{background:linear-gradient(160deg,#5A3A3A,#241616)}
+.c6{background:linear-gradient(160deg,#1E4635,#0D2118)}
+.c7{background:linear-gradient(160deg,#4A3B5C,#21192B)}
+.c8{background:linear-gradient(160deg,#7A5936,#3B2916)}
+.c9{background:linear-gradient(160deg,#234B5E,#0F232E)}
+.cA{background:linear-gradient(160deg,#2C3E35,#14201A)}
+.cB{background:linear-gradient(160deg,#7C3F23,#432010)}
+.cC{background:linear-gradient(160deg,#2A3B5C,#151F33)}
+
+/* Filtro por formato (aplica también dentro de Sagas) */
+#flt-phys:checked ~ .wrap .shelf .ebook{display:none}
+#flt-ebook:checked ~ .wrap .shelf .phys{display:none}
+#flt-ebook:checked ~ .wrap .saga.only-phys{display:none}
+.sagas{display:none}
+#vw-saga:checked ~ .wrap .grid-main{display:none}
+#vw-saga:checked ~ .wrap .sagas{display:block}
+
+.saga{background:var(--surf);border-radius:18px;padding:14px;margin-bottom:12px}
+.saga-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:10px}
+.saga-t{font-size:16px;font-weight:700;line-height:1.25}
+.pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--pri);color:var(--pri-fg);white-space:nowrap}
+.pill.gap{background:var(--acc);color:#fff}
+
+/* ---------- Barra inferior (zona del pulgar) ---------- */
+.dock{padding:8px 14px 14px}
+.sync{display:flex;align-items:center;gap:10px;background:var(--surf);border-radius:14px;padding:10px 12px;font-size:12px;margin-bottom:10px}
+.dot{width:8px;height:8px;border-radius:999px;background:#E9A23B;flex:0 0 8px}
+.tabs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:var(--surf);border-radius:22px;padding:6px}
+.tab{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted);border-radius:16px}
+.tab i{font-style:normal;font-size:16px;line-height:1.1}
+.tab.on{color:var(--fg);background:var(--card)}
+.fab{width:72px;height:56px;border-radius:18px;background:var(--acc);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:700;box-shadow:0 8px 18px rgba(184,95,48,.35)}
+.fab b{font-size:20px;line-height:1}
+
+/* ---------- Estado vacío ---------- */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:16px 32px}
+.stack{position:relative;width:160px;height:120px;margin-bottom:22px}
+.stack span{position:absolute;bottom:0;width:60px;height:90px;border-radius:4px 8px 8px 4px}
+.stack .a{left:12px;transform:rotate(-9deg);background:#D9CFBF}
+.stack .b{left:50px;bottom:10px;z-index:2;background:#B9A383}
+.stack .c{left:88px;transform:rotate(8deg);border:2px dashed var(--acc);display:flex;align-items:center;justify-content:center;color:var(--acc);font-size:24px;font-weight:700}
+.empty h2{font-size:22px;margin-bottom:8px}
+.empty p{font-size:14px;color:var(--muted);max-width:270px}
+.actions{padding:0 20px 12px}
+.cta{display:flex;align-items:center;justify-content:center;width:100%;min-height:52px;border-radius:16px;background:var(--pri);color:var(--pri-fg);font-size:15px;font-weight:700}
+.cta.acc{background:var(--acc);color:#fff}
+.btn2{display:flex;align-items:center;justify-content:center;width:100%;min-height:48px;border-radius:14px;background:var(--surf);color:var(--fg);font-size:14px;font-weight:600;margin-top:8px}
+.link{display:block;text-align:center;font-size:13px;font-weight:600;color:var(--muted);padding:12px 0 2px}
+
+/* ---------- Cámara ---------- */
+.cam{background:radial-gradient(ellipse at 50% 40%,#2B2622 0%,#0E0C0B 75%);color:#FAF7F2;padding:12px 16px 26px;display:flex;flex-direction:column;flex:1;min-height:240px}
+.cam-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.circ{width:44px;height:44px;border-radius:999px;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:16px;color:#FAF7F2;flex:0 0 44px}
+.cam-title{font-size:13px;font-weight:600;opacity:.85}
+.count{min-height:32px;display:inline-flex;align-items:center;padding:0 12px;border-radius:999px;background:#E9A23B;color:#141210;font-size:12px;font-weight:700}
+.ret{margin:auto;width:236px;border-radius:18px;border:2px solid #E9A23B;padding:14px 14px 12px;text-align:center;background:rgba(255,255,255,.04)}
+.barcode{height:34px;background:repeating-linear-gradient(90deg,#FAF7F2 0 2px,transparent 2px 4px,#FAF7F2 4px 5px,transparent 5px 8px,#FAF7F2 8px 11px,transparent 11px 13px);opacity:.8;border-radius:2px}
+.laser{height:2px;background:#E9A23B;margin:8px 0;box-shadow:0 0 8px #E9A23B}
+.isbn{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:1px;opacity:.85}
+.ok{font-size:12px;color:#E9A23B;font-weight:700;margin-top:4px}
+.ret.warn{border-color:#E5674D;display:none}
+.ret.warn .laser{background:#E5674D;box-shadow:0 0 8px #E5674D}
+.ret.warn .ok{color:#F08C74}
+#st-store:checked ~ .wrap #s-scan .ret.good{display:none}
+#st-store:checked ~ .wrap #s-scan .ret.warn{display:block}
+.cam-ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.mode{display:grid;grid-template-columns:1fr 1fr;background:rgba(255,255,255,.12);border-radius:999px;padding:4px;flex:1;max-width:220px}
+.mode label{min-height:36px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;border-radius:999px;color:rgba(250,247,242,.8)}
+.mode .on{background:#FAF7F2;color:#141210}
+.toast{display:flex;justify-content:center;margin-top:10px}
+.toast span{background:rgba(250,247,242,.95);color:#1C1917;border-radius:999px;padding:8px 14px;font-size:12px;font-weight:700}
+.toast.old span{background:rgba(250,247,242,.18);color:#FAF7F2;font-weight:600}
+
+/* ---------- Hoja inferior ---------- */
+.sheet{background:var(--bg);color:var(--fg);border-radius:26px 26px 0 0;padding:10px 18px 18px;margin-top:-16px;position:relative}
+.handle{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 12px}
+.sh{display:none}
+#st-found:checked ~ .wrap .sh-found,
+#st-dup:checked ~ .wrap .sh-dup,
+#st-off:checked ~ .wrap .sh-off,
+#st-store:checked ~ .wrap .sh-store{display:block}
+.bk-title{font-size:19px;font-weight:700;line-height:1.2}
+.chip-saga{display:inline-block;margin-top:6px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surf)}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;margin:14px 0 8px}
+.lbl span{font-weight:500;color:var(--muted)}
+.covs{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 4px}
+.covs label{flex:0 0 86px}
+.covs .cv{outline:3px solid transparent;outline-offset:2px}
+.cap{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.25}
+#cv-1:checked ~ .wrap label[for="cv-1"] .cv,
+#cv-2:checked ~ .wrap label[for="cv-2"] .cv,
+#cv-3:checked ~ .wrap label[for="cv-3"] .cv{outline-color:var(--acc)}
+#cv-1:checked ~ .wrap label[for="cv-1"] .cap,
+#cv-2:checked ~ .wrap label[for="cv-2"] .cap,
+#cv-3:checked ~ .wrap label[for="cv-3"] .cap{color:var(--fg);font-weight:700}
+.best{position:absolute;top:6px;left:6px;right:6px;background:#E9A23B;color:#141210;font-size:12px;font-weight:700;border-radius:6px;text-align:center;padding:1px 0}
+.snap{flex:0 0 86px;aspect-ratio:2/3;border:2px dashed var(--acc);border-radius:5px 10px 10px 5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--acc);font-size:12px;font-weight:700;text-align:center;padding:6px}
+.chips{display:flex;gap:8px;overflow-x:auto}
+.chip{min-height:40px;padding:0 14px;display:inline-flex;align-items:center;border-radius:999px;background:var(--surf);color:var(--fg);font-size:13px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.chip.add{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+#pb-1:checked ~ .wrap label[for="pb-1"],
+#pb-2:checked ~ .wrap label[for="pb-2"],
+#pb-3:checked ~ .wrap label[for="pb-3"]{background:var(--pri);color:var(--pri-fg)}
+.more{margin-top:14px;border:1px solid var(--line);border-radius:14px}
+.more summary{list-style:none;min-height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:13px;font-weight:600}
+.more summary::-webkit-details-marker{display:none}
+.more summary::after{content:"＋";color:var(--muted)}
+.more[open] summary::after{content:"－"}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 14px 14px}
+.field{background:var(--surf);border-radius:10px;padding:8px 10px}
+.field small{display:block;font-size:12px;color:var(--muted)}
+.field b{font-size:13px}
+.fmt-e{display:none}
+#md-ebook:checked ~ .wrap .fmt-e{display:inline}
+#md-ebook:checked ~ .wrap .fmt-p{display:none}
+.notice{display:flex;gap:12px;align-items:flex-start;background:var(--surf);border-radius:16px;padding:12px;font-size:13px}
+.notice b{display:block;margin-bottom:2px}
+.ico{width:36px;height:36px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 36px;background:#E9A23B;color:#141210}
+.ico.red{background:#E5674D;color:#fff}
+.mini{width:52px;flex:0 0 52px;padding:6px}
+
+/* ---------- Bandeja de Ráfaga ---------- */
+.tray{display:flex;gap:12px;overflow-x:auto;padding:4px 2px 10px}
+.ti{flex:0 0 64px}
+.ti .cv{padding:6px;border-radius:4px 7px 7px 4px;overflow:visible}
+.stt{position:absolute;bottom:-7px;right:-7px;width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2px solid var(--bg);background:var(--pri);color:var(--pri-fg)}
+.stt.wait{background:#E9A23B;color:#141210}
+.stt.off{background:var(--muted);color:var(--bg)}
+.ti .cap{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- Buscar ---------- */
+.tg-grid.five{grid-template-columns:repeat(5,1fr)}
+.tg-grid.five .tg{padding:9px 2px}
+.qstates{display:none}
+#scr-search:checked ~ .wrap .qstates{display:block}
+#scr-search:checked ~ .wrap .chrome label[for="scr-search"]{background:#B85F30;color:#fff}
+#q-empty:checked ~ .wrap .chrome label[for="q-empty"],
+#q-res:checked ~ .wrap .chrome label[for="q-res"],
+#q-none:checked ~ .wrap .chrome label[for="q-none"]{background:#3A3530;color:#F3EFE7}
+#scr-search:checked ~ .wrap #s-search{display:flex}
+.qv{display:none}
+#q-empty:checked ~ .wrap .q-empty,
+#q-res:checked ~ .wrap .q-res,
+#q-none:checked ~ .wrap .q-none{display:block}
+.field-s{margin:0 20px 14px;min-height:48px;border-radius:14px;background:var(--surf);display:flex;align-items:center;gap:10px;padding:0 14px;font-size:15px}
+.field-s .ph{color:var(--muted)}
+.caret{display:inline-block;width:2px;height:18px;background:var(--acc);vertical-align:middle;margin-left:1px}
+.clear{margin-left:auto;width:28px;height:28px;border-radius:999px;background:var(--line);color:var(--fg);font-size:12px;display:flex;align-items:center;justify-content:center}
+.sec-t{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:8px 20px 6px}
+.row{display:flex;gap:12px;align-items:center;padding:8px 20px;min-height:64px}
+.row .cv{width:44px;flex:0 0 44px;padding:4px;border-radius:3px 6px 6px 3px}
+.row-t{font-size:14px;font-weight:700;line-height:1.25}
+.row-m{font-size:12px;color:var(--muted)}
+.row-x{min-width:0;flex:1}
+mark{background:rgba(233,162,59,.38);color:inherit;border-radius:3px;padding:0 1px}
+.add{min-height:40px;padding:0 12px;border-radius:999px;background:var(--surf);font-size:12px;font-weight:700;display:inline-flex;align-items:center;white-space:nowrap;color:var(--fg);flex:0 0 auto}
+.hint-acc{font-size:12px;font-weight:700;color:var(--acc)}
+.recent{display:flex;align-items:center;gap:12px;padding:0 20px;min-height:48px;font-size:14px}
+.recent span{color:var(--muted)}
+.chips-pad{padding:0 20px;flex-wrap:wrap}
+.chip small{color:var(--muted);font-weight:500;margin-left:6px;font-size:12px}
+.foot{font-size:12px;color:var(--muted);padding:6px 20px 12px}
+</style>
+</head>
+<body>
+
+<!-- Estado en CSS puro (funciona sin JavaScript en el visor móvil) -->
+<input type="radio" name="screen" id="scr-lib" class="st" checked />
+<input type="radio" name="screen" id="scr-empty" class="st" />
+<input type="radio" name="screen" id="scr-scan" class="st" />
+<input type="radio" name="screen" id="scr-burst" class="st" />
+<input type="radio" name="screen" id="scr-search" class="st" />
+<input type="radio" name="query" id="q-empty" class="st" />
+<input type="radio" name="query" id="q-res" class="st" checked />
+<input type="radio" name="query" id="q-none" class="st" />
+<input type="radio" name="theme" id="thm-day" class="st" checked />
+<input type="radio" name="theme" id="thm-night" class="st" />
+<input type="radio" name="filter" id="flt-all" class="st" checked />
+<input type="radio" name="filter" id="flt-phys" class="st" />
+<input type="radio" name="filter" id="flt-ebook" class="st" />
+<input type="radio" name="view" id="vw-grid" class="st" checked />
+<input type="radio" name="view" id="vw-saga" class="st" />
+<input type="radio" name="sstate" id="st-found" class="st" checked />
+<input type="radio" name="sstate" id="st-dup" class="st" />
+<input type="radio" name="sstate" id="st-off" class="st" />
+<input type="radio" name="sstate" id="st-store" class="st" />
+<input type="radio" name="mod" id="md-phys" class="st" checked />
+<input type="radio" name="mod" id="md-ebook" class="st" />
+<input type="radio" name="cov" id="cv-1" class="st" checked />
+<input type="radio" name="cov" id="cv-2" class="st" />
+<input type="radio" name="cov" id="cv-3" class="st" />
+<input type="radio" name="pub" id="pb-1" class="st" checked />
+<input type="radio" name="pub" id="pb-2" class="st" />
+<input type="radio" name="pub" id="pb-3" class="st" />
+
+<div class="wrap">
+
+  <!-- Controles del prototipo -->
+  <div class="chrome">
+    <div class="chrome-top"><span class="tag">Fase 1 · Diseño v2</span><span>Controles del prototipo</span></div>
+    <div class="tg-grid five">
+      <label for="scr-lib" class="tg">Librero</label>
+      <label for="scr-empty" class="tg">Vacío</label>
+      <label for="scr-scan" class="tg">Escáner</label>
+      <label for="scr-burst" class="tg">Ráfaga</label>
+      <label for="scr-search" class="tg">Buscar</label>
+    </div>
+    <div class="tg-grid">
+      <label for="thm-day" class="tg"><svg class="lucide lucide-sm" style="margin-right:4px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>Día</label>
+      <label for="thm-night" class="tg"><svg class="lucide lucide-sm" style="margin-right:4px" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>Noche</label>
+    </div>
+    <div class="states">
+      <div class="states-title">Qué detectó la cámara:</div>
+      <div class="tg-grid four">
+        <label for="st-found" class="tg">Encontrado</label>
+        <label for="st-dup" class="tg">Ya lo tienes</label>
+        <label for="st-off" class="tg">Sin señal</label>
+        <label for="st-store" class="tg">Cód. tienda</label>
+      </div>
+    </div>
+    <div class="qstates">
+      <div class="states-title">Estado de la búsqueda:</div>
+      <div class="tg-grid" style="grid-template-columns:repeat(3,1fr)">
+        <label for="q-empty" class="tg">Sin escribir</label>
+        <label for="q-res" class="tg">Resultados</label>
+        <label for="q-none" class="tg">Nada + sin señal</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+
+    <!-- ===================== 1. MI LIBRERO ===================== -->
+    <div id="s-lib" class="scr">
+      <div class="sbar"><span>9:41</span><span>100%</span></div>
+      <div class="hdr">
+        <div>
+          <h1 class="h1 serif">Mi Librero</h1>
+          <p class="muted">10 ejemplares · 2 sagas</p>
+        </div>
+        <label for="vw-saga" class="vt"><svg class="lucide lucide-sm" style="margin-right:6px" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>Ver por sagas</label>
+        <label for="vw-grid" class="vt"><svg class="lucide lucide-sm" style="margin-right:6px" viewBox="0 0 24 24"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg>Ver cuadrícula</label>
+      </div>
+
+      <div class="seg seg-flt">
+        <label for="flt-all">Todos</label>
+        <label for="flt-phys">Físicos</label>
+        <label for="flt-ebook">eBooks</label>
+      </div>
+
+      <div class="shelf">
+        <!-- Cuadrícula: solo portadas -->
+        <div class="grid grid-main">
+          <div class="phys"><div class="cv pend"><b style="font-size:12px;color:var(--fg);display:flex;align-items:center;gap:4px"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Pendiente</b><span style="font-size:12px">978-84-450-0066-3</span><span style="font-size:12px">Se completa con señal</span></div></div>
+          <div class="ebook"><div class="cv c1"><span class="sn">#1</span><span class="eb">eBook</span><span class="ct serif">Dune</span><span class="ca">F. Herbert</span></div></div>
+          <div class="ebook"><div class="cv c2"><span class="sn">#2</span><span class="eb">eBook</span><span class="ct serif">El Mesías de Dune</span><span class="ca">F. Herbert</span></div></div>
+          <div class="phys"><div class="cv c3"><span class="sn">#3</span><span class="ct serif">Hijos de Dune</span><span class="ca">F. Herbert</span></div></div>
+          <div class="phys"><div class="cv c4"><span class="sn">#1</span><span class="ct serif">La sombra del viento</span><span class="ca">C. Ruiz Zafón</span></div></div>
+          <div class="phys"><div class="cv c5"><span class="sn">#3</span><span class="ct serif">El prisionero del cielo</span><span class="ca">C. Ruiz Zafón</span></div></div>
+          <div class="phys"><div class="cv c6"><span class="ct serif">Rayuela</span><span class="ca">J. Cortázar</span></div></div>
+          <div class="phys"><div class="cv c7"><span class="ct serif">Ficciones</span><span class="ca">J. L. Borges</span></div></div>
+          <div class="phys"><div class="cv c8"><span class="ct serif">Pedro Páramo</span><span class="ca">J. Rulfo</span></div></div>
+          <div class="ebook"><div class="cv c9"><span class="eb">eBook</span><span class="ct serif">Proyecto Hail Mary</span><span class="ca">A. Weir</span></div></div>
+        </div>
+
+        <!-- Vista por sagas (respeta el filtro Físicos/eBooks) -->
+        <div class="sagas">
+          <div class="saga">
+            <div class="saga-h">
+              <div><div class="saga-t serif">Crónicas de Dune</div><div class="muted">Frank Herbert</div></div>
+              <span class="pill">#1 – #3</span>
+            </div>
+            <div class="grid">
+              <div class="ebook"><div class="cv c1"><span class="sn">#1</span><span class="eb">eBook</span><span class="ct serif">Dune</span></div></div>
+              <div class="ebook"><div class="cv c2"><span class="sn">#2</span><span class="eb">eBook</span><span class="ct serif">El Mesías</span></div></div>
+              <div class="phys"><div class="cv c3"><span class="sn">#3</span><span class="ct serif">Hijos de Dune</span></div></div>
+            </div>
+          </div>
+          <div class="saga only-phys">
+            <div class="saga-h">
+              <div><div class="saga-t serif">El Cementerio de los Libros Olvidados</div><div class="muted">Carlos Ruiz Zafón</div></div>
+              <span class="pill gap">Falta el #2</span>
+            </div>
+            <div class="grid">
+              <div class="phys"><div class="cv c4"><span class="sn">#1</span><span class="ct serif">La sombra del viento</span></div></div>
+              <div class="phys"><div class="cv ghost"><b style="font-size:13px">#2</b><span style="font-size:12px">No lo has registrado</span></div></div>
+              <div class="phys"><div class="cv c5"><span class="sn">#3</span><span class="ct serif">El prisionero del cielo</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <div class="sync"><span class="dot"></span><span>1 libro esperando señal. Sus datos se completan solos.</span></div>
+        <div class="tabs">
+          <div class="tab on"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Librero</div>
+          <label for="scr-scan" class="fab"><svg class="lucide" style="width:22px;height:22px;margin-bottom:2px" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Escanear</label>
+          <label for="scr-search" class="tab"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Buscar</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 1b. LIBRERO VACÍO ===================== -->
+    <div id="s-empty" class="scr">
+      <div class="sbar"><span>9:41</span><span>100%</span></div>
+      <div class="hdr"><div><h1 class="h1 serif">Mi Librero</h1><p class="muted">Aún sin libros</p></div></div>
+      <div class="empty">
+        <div class="stack"><span class="a"></span><span class="b"></span><span class="c">+</span></div>
+        <h2 class="serif">Tu librero empieza aquí</h2>
+        <p>Apunta la cámara al código de barras de cualquier libro. Funciona aunque no tengas señal.</p>
+      </div>
+      <div class="actions">
+        <label for="scr-scan" class="cta acc">Escanear mi primer libro</label>
+        <label for="scr-search" class="btn2">Agregar eBook o libro sin ISBN</label>
+      </div>
+      <div class="dock">
+        <div class="tabs">
+          <div class="tab on"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Librero</div>
+          <label for="scr-scan" class="fab"><svg class="lucide" style="width:22px;height:22px;margin-bottom:2px" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Escanear</label>
+          <label for="scr-search" class="tab"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Buscar</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 2. ESCÁNER INDIVIDUAL ===================== -->
+    <div id="s-scan" class="scr">
+      <div class="cam">
+        <div class="cam-top">
+          <label for="scr-lib" class="circ" aria-label="Cerrar"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></label>
+          <span class="cam-title">Escanear ISBN</span>
+          <span style="width:44px"></span>
+        </div>
+
+        <div class="ret good">
+          <div class="barcode"></div>
+          <div class="laser"></div>
+          <div class="isbn">978-84-450-0066-3</div>
+          <div class="ok"><svg class="lucide lucide-sm" style="margin-right:3px" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>ISBN válido · cámara en pausa</div>
+        </div>
+        <div class="ret warn">
+          <div class="barcode"></div>
+          <div class="laser"></div>
+          <div class="isbn">2000043918274</div>
+          <div class="ok"><svg class="lucide lucide-sm" style="margin-right:3px" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8"/><line x1="12" x2="12.01" y1="12"/></svg>Código de tienda, no es ISBN</div>
+        </div>
+
+        <div class="cam-ctrl">
+          <span class="circ" aria-label="Linterna"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6c0 2-2 4-2 7v6a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6c0-3-2-5-2-7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><line x1="6" x2="18" y1="9" y2="9"/><line x1="12" x2="12" y1="12"/></svg></span>
+          <div class="mode">
+            <label for="scr-scan" class="on">Uno a uno</label>
+            <label for="scr-burst">Ráfaga</label>
+          </div>
+          <label for="scr-search" class="circ" aria-label="Escribir título o ISBN"><svg class="lucide" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></svg></label>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="handle"></div>
+
+        <!-- Estado: encontrado -->
+        <div class="sh sh-found">
+          <div class="bk-title serif">El Señor de los Anillos: La Comunidad del Anillo</div>
+          <div class="muted" style="margin-top:2px">J. R. R. Tolkien · 576 págs.</div>
+          <span class="chip-saga">El Señor de los Anillos · #1</span>
+
+          <div class="lbl">¿Cómo lo tienes?</div>
+          <div class="seg two seg-mod">
+            <label for="md-phys">Libro físico</label>
+            <label for="md-ebook">eBook</label>
+          </div>
+
+          <div class="lbl">Portada de tu ejemplar <span>Desliza →</span></div>
+          <div class="covs hscroll">
+            <label for="cv-1"><div class="cv cA"><span class="best">Coincide</span><span class="ct serif">La Comunidad del Anillo</span></div><div class="cap">Minotauro · 2012</div></label>
+            <label for="cv-2"><div class="cv cB"><span class="ct serif">La Comunidad del Anillo</span></div><div class="cap">Booket · 2016</div></label>
+            <label for="cv-3"><div class="cv cC"><span class="ct serif">La Comunidad (ilustrada)</span></div><div class="cap">Minotauro · 2021</div></label>
+            <div class="snap"><svg class="lucide" style="width:20px;height:20px;color:var(--acc)" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>Tomar foto de la mía</div>
+          </div>
+
+          <div class="lbl">Editorial</div>
+          <div class="chips hscroll">
+            <label for="pb-1" class="chip">Minotauro</label>
+            <label for="pb-2" class="chip">Booket</label>
+            <label for="pb-3" class="chip">Planeta</label>
+            <span class="chip add">+ Otra</span>
+          </div>
+
+          <details class="more">
+            <summary>Más detalles · saga, formato, páginas</summary>
+            <div class="fields">
+              <div class="field"><small>Páginas</small><b>576</b></div>
+              <div class="field"><small>Formato</small><b class="fmt-p">Tapa blanda</b><b class="fmt-e">Kindle</b></div>
+              <div class="field"><small>Saga · tomo</small><b>#1</b></div>
+              <div class="field"><small>Traductor</small><b>Luis Domènech</b></div>
+            </div>
+          </details>
+
+          <label for="scr-lib" class="cta" style="margin-top:14px">Guardar en Mi Librero</label>
+        </div>
+
+        <!-- Estado: ya lo tienes -->
+        <div class="sh sh-dup">
+          <div class="notice">
+            <div class="cv cA mini"></div>
+            <div><b>Ya está en tu librero</b>El Señor de los Anillos #1 · Físico · Minotauro. Lo agregaste el 2 de noviembre.</div>
+          </div>
+          <div class="cta" style="margin-top:14px">Listo, seguir escaneando</div>
+          <label for="st-found" class="btn2">Registrar otra copia o edición</label>
+          <label for="scr-lib" class="link">Ver mi ejemplar</label>
+        </div>
+
+        <!-- Estado: sin señal -->
+        <div class="sh sh-off">
+          <div class="notice">
+            <div class="ico"><svg class="lucide" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></div>
+            <div><b>Sin señal, no pasa nada</b>Guardamos el ISBN 978-84-450-0066-3 en tu librero. La portada y los datos se completan solos cuando vuelva la conexión.</div>
+          </div>
+          <div class="lbl">¿Cómo lo tienes?</div>
+          <div class="seg two seg-mod">
+            <label for="md-phys">Libro físico</label>
+            <label for="md-ebook">eBook</label>
+          </div>
+          <label for="scr-lib" class="cta" style="margin-top:14px">Guardar y seguir</label>
+        </div>
+
+        <!-- Estado: código de tienda -->
+        <div class="sh sh-store">
+          <div class="notice">
+            <div class="ico red"><svg class="lucide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8"/><line x1="12" x2="12.01" y1="12"/></svg></div>
+            <div><b>Ese código es de la tienda</b>Empieza con 200, así que no es un ISBN. Busca el que empieza con 978 o 979, casi siempre abajo en la contraportada.</div>
+          </div>
+          <div class="link">La cámara sigue buscando</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== 3. ESCÁNER EN RÁFAGA ===================== -->
+    <div id="s-burst" class="scr">
+      <div class="cam">
+        <div class="cam-top">
+          <label for="scr-lib" class="circ" aria-label="Cerrar"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></label>
+          <span class="cam-title">Ráfaga</span>
+          <span class="count">4 en cola</span>
+        </div>
+
+        <div class="ret good" style="margin-bottom:0">
+          <div class="barcode"></div>
+          <div class="laser"></div>
+          <div class="isbn">978-84-9759-682-4</div>
+          <div class="ok"><svg class="lucide lucide-sm" style="margin-right:3px" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Agregado · sigue apuntando</div>
+        </div>
+        <div class="toast old"><span>Dune ya estaba en la cola</span></div>
+        <div class="toast" style="margin-bottom:auto"><span><svg class="lucide lucide-sm" style="margin-right:3px" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Hijos de Dune · #4</span></div>
+
+        <div class="cam-ctrl">
+          <span class="circ" aria-label="Linterna"><svg class="lucide" viewBox="0 0 24 24"><path d="M18 6c0 2-2 4-2 7v6a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-6c0-3-2-5-2-7a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2Z"/><line x1="6" x2="18" y1="9" y2="9"/><line x1="12" x2="12" y1="12"/></svg></span>
+          <div class="mode">
+            <label for="scr-scan">Uno a uno</label>
+            <label for="scr-burst" class="on">Ráfaga</label>
+          </div>
+          <label for="scr-search" class="circ" aria-label="Escribir título o ISBN"><svg class="lucide" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></svg></label>
+        </div>
+      </div>
+
+      <div class="sheet">
+        <div class="handle"></div>
+        <div class="lbl" style="margin-top:0">Cola de ráfaga <span>3 listos · 1 sin señal</span></div>
+        <div class="tray hscroll">
+          <div class="ti"><div class="cv c1"><span class="stt"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span></div><div class="cap">Dune</div></div>
+          <div class="ti"><div class="cv c6"><span class="stt"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span></div><div class="cap">Rayuela</div></div>
+          <div class="ti"><div class="cv pend" style="padding:4px"><span style="font-size:12px">ISBN</span><span class="stt off"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span></div><div class="cap">978-607-31…</div></div>
+          <div class="ti"><div class="cv c3"><span class="stt wait">…</span></div><div class="cap">Hijos de Dune</div></div>
+        </div>
+        <p class="muted">Nada se guarda hasta que lo revises. Ahí eliges portada y editorial de cada uno.</p>
+        <label for="scr-lib" class="cta" style="margin-top:12px">Revisar y guardar 4</label>
+      </div>
+    </div>
+
+    <!-- ===================== 4. BUSCAR ===================== -->
+    <div id="s-search" class="scr">
+      <div class="sbar"><span>9:41</span><span>100%</span></div>
+      <div class="hdr">
+        <div>
+          <h1 class="h1 serif">Buscar</h1>
+          <p class="muted">En tu librero y catálogo global</p>
+        </div>
+      </div>
+
+      <!-- Barra de búsqueda simulada -->
+      <div class="field-s">
+        <span style="color:var(--muted);display:flex"><svg class="lucide" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></span>
+        <div class="qv q-empty"><span class="ph">Título, autor, saga o editorial…</span><span class="caret"></span></div>
+        <div class="qv q-res"><span style="font-weight:600">Dune</span><span class="caret"></span></div>
+        <div class="qv q-none"><span style="font-weight:600">Libro inencontrable 1920</span><span class="caret"></span></div>
+        <label for="q-empty" class="clear" aria-label="Borrar"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></label>
+      </div>
+
+      <!-- Estado A: Sin escribir (búsquedas recientes y filtros rápidos) -->
+      <div class="qv q-empty" style="flex:1">
+        <div class="sec-t">Búsquedas recientes</div>
+        <div class="recent"><span><svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><b>Carlos Ruiz Zafón</b></div>
+        <div class="recent"><span><svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span><b>Minotauro</b></div>
+
+        <div class="sec-t" style="margin-top:16px">Editoriales en tu librero</div>
+        <div class="chips chips-pad">
+          <span class="chip">Debolsillo <small>3</small></span>
+          <span class="chip">Planeta <small>2</small></span>
+          <span class="chip">Alfaguara <small>1</small></span>
+          <span class="chip">Alianza <small>1</small></span>
+          <span class="chip">Minotauro <small>0</small></span>
+        </div>
+      </div>
+
+      <!-- Estado B: Con resultados (En tu librero + En catálogo global) -->
+      <div class="qv q-res" style="flex:1;overflow-y:auto">
+        <div class="sec-t">En tu librero (3)</div>
+        <div class="row">
+          <div class="cv c1"><span class="ct serif" style="font-size:12px">Dune</span></div>
+          <div class="row-x">
+            <div class="row-t"><mark>Dune</mark> (#1)</div>
+            <div class="row-m">Frank Herbert · Debolsillo · eBook</div>
+          </div>
+          <span class="pill" style="font-size:12px">En tu librero</span>
+        </div>
+        <div class="row">
+          <div class="cv c2"><span class="ct serif" style="font-size:12px">Mesías</span></div>
+          <div class="row-x">
+            <div class="row-t">El Mesías de <mark>Dune</mark> (#2)</div>
+            <div class="row-m">Frank Herbert · Debolsillo · eBook</div>
+          </div>
+          <span class="pill" style="font-size:12px">En tu librero</span>
+        </div>
+        <div class="row">
+          <div class="cv c3"><span class="ct serif" style="font-size:12px">Hijos</span></div>
+          <div class="row-x">
+            <div class="row-t">Hijos de <mark>Dune</mark> (#3)</div>
+            <div class="row-m">Frank Herbert · Debolsillo · Físico</div>
+          </div>
+          <span class="pill" style="font-size:12px">En tu librero</span>
+        </div>
+
+        <div class="sec-t" style="margin-top:14px">Catálogo global (por si quieres agregarlo)</div>
+        <div class="row">
+          <div class="cv c7"><span class="ct serif" style="font-size:12px">Dios</span></div>
+          <div class="row-x">
+            <div class="row-t">Dios Emperador de <mark>Dune</mark> (#4)</div>
+            <div class="row-m">Frank Herbert · Nova / Debolsillo</div>
+          </div>
+          <label for="scr-scan" class="add">+ Agregar</label>
+        </div>
+      </div>
+
+      <!-- Estado C: Sin resultados / Sin señal -->
+      <div class="qv q-none" style="flex:1;padding:0 20px">
+        <div class="notice" style="margin-top:10px">
+          <div class="ico"><svg class="lucide" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8"/><line x1="12" x2="12.01" y1="12"/></svg></div>
+          <div>
+            <b>No encontrado en tu librero</b>
+            No tienes ningún libro con ese nombre.
+          </div>
+        </div>
+        <div class="notice" style="margin-top:12px;background:transparent;border:1px dashed var(--line)">
+          <div class="ico" style="background:var(--surf);color:var(--muted)"><svg class="lucide" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></div>
+          <div>
+            <b>¿No tiene código ISBN o estás sin señal?</b>
+            Puedes registrarlo manualmente escribiendo su título, editorial y foto de portada.
+          </div>
+        </div>
+        <label for="scr-scan" class="btn2" style="margin-top:16px">Registrar libro manualmente</label>
+      </div>
+
+      <!-- Dock de pestañas -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-lib" class="tab"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Librero</label>
+          <label for="scr-scan" class="fab"><svg class="lucide" style="width:22px;height:22px;margin-bottom:2px" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>Escanear</label>
+          <div class="tab on"><svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Buscar</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
