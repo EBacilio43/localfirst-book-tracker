@@ -141,8 +141,9 @@ Para evitar registros duplicados, condiciones de carrera o llamadas dobles a las
 ## 6. Flujo de Trabajo en Git, Fases y Estándares para Portafolio GitHub
 
 ### Estrategia de Ramas (Git Flow Ligero por Fases)
-- `main`: Rama de producción estable. Solo recibe merges al completar cada Fase, etiquetada con **SemVer** (`v0.1.0` Fase 1, `v0.2.0` Fase 2, etc.).
-- `develop`: Rama principal de integración donde se unen las ramas de funcionalidades terminadas y probadas.
+- `main`: Rama de producción estable. Solo recibe código mediante **Pull Request (PR)** desde `develop` al completar cada Fase, etiquetada con **SemVer** (`v0.1.0` Fase 1, `v0.2.0` Fase 2, etc.).
+- `develop`: Rama principal de integración donde se unen las ramas de funcionalidades terminadas y probadas **exclusivamente mediante Pull Request (PR)**.
+- **Regla Estricta de Integración por PR:** Queda estrictamente prohibido realizar `git merge` directo en local hacia `develop` o `main`. Todo agente o desarrollador debe hacer `git push` únicamente de la rama de trabajo (`feat/...`, `fix/...`, `docs/...`) a los remotos para que la integración hacia `develop` y `main` se realice **siempre y únicamente a través de un Pull Request en GitHub**.
 - **Ramas de trabajo (creadas desde `develop`):**
   - `feat/<modulo>-<descripcion-corta>` (ej. `feat/escaner-modo-rafaga`, `feat/metas-motor-predicciones`).
   - `fix/<modulo>-<descripcion-corta>` (ej. `fix/ui-bloqueo-doble-toque`).
@@ -170,4 +171,13 @@ Queda estrictamente prohibido el uso de emojis en cualquier parte del proyecto B
 2. **En la Comunicación y Respuestas:** El asistente y los desarrolladores jamás deben incluir emojis en los mensajes del chat, explicaciones técnicas, resúmenes de estado ni revisiones de código.
 3. **En Commits y Control de Versiones:** Prohibido incluir emojis en los títulos o descripciones de los commits de Git (`git commit`) y en las etiquetas de versión (`git tag`).
 4. **En Documentación:** Prohibido utilizar emojis en archivos Markdown (`README.md`, `PLAN_MAESTRO_BACIBOOKS.md`, especificaciones, etc.). Toda la documentación debe mantener un tono técnico, formal y sobrio.
+
+---
+
+## 8. Regla Estricta de Lenguaje Humano y Editorial (Cero Jerga Técnica en la UI)
+
+La aplicación está dirigida a lectores, no a ingenieros de software. Queda estrictamente prohibido mostrar términos técnicos, nombres de formatos internos, banderas de base de datos o siglas de arquitectura en cualquier texto visible para el usuario final (tanto en el código React Native como en los prototipos visuales):
+- **Prohibido mostrar en la UI:** `FTS5`, `SQLite`, `Zod`, `Debounce`, `280ms / 450ms`, `.webp`, `archivos huérfanos`, `depurar`, `EXIF`, `PENDING_OFFLINE_SYNC`, `schemaVersion`, `signInSilently`, `OAuth`, `drive.appdata`, `updated_at / deleted_at`, `isbn_contributions`, `useEntitlements`, `shouldShowAds`, `Outlier Guard`, `EMA`, `TBR`, `JSON / Snapshot determinista`, `Supabase` o `ML Kit`.
+- **Lenguaje obligatorio en la UI:** Usar siempre expresiones naturales, cálidas y comprensibles para cualquier lector (ej. *"En mi biblioteca"*, *"Liberar espacio de portadas no usadas"*, *"Libros escaneados sin internet"*, *"Respaldo en Google Drive"*, *"¿Qué leo hoy?"*, *"Revisar tiempo de lectura"*).
+
 

@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fase 5 (v1.0.0) — Prototipo Interactivo: Respaldo en Nube, Libros Pendientes, Importar Biblioteca y Privacidad</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+input.st{display:none}
+label{cursor:pointer;user-select:none}
+.wrap{max-width:414px;margin:0 auto}
+.hscroll{scrollbar-width:none;overflow-x:auto}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Controles Superiores del Prototipo ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.three{grid-template-columns:repeat(3,1fr)}
+.tg{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:12px;font-weight:600;padding:8px 4px;border-radius:9px;color:#A8A29E;transition:all .15s ease}
+.subpanel{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #2E2A27}
+.subpanel-title{font-size:12px;color:#A8A29E;margin-bottom:4px;display:flex;justify-content:space-between}
+
+/* Activación de pestañas principales */
+#scr-drive:checked ~ .wrap .chrome label[for="scr-drive"],
+#scr-supabase:checked ~ .wrap .chrome label[for="scr-supabase"],
+#scr-portability:checked ~ .wrap .chrome label[for="scr-portability"],
+#scr-legal:checked ~ .wrap .chrome label[for="scr-legal"]{background:#B85F30;color:#fff}
+
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+
+#scr-drive:checked ~ .wrap .sp-drive,
+#scr-supabase:checked ~ .wrap .sp-supabase,
+#scr-portability:checked ~ .wrap .sp-portability,
+#scr-legal:checked ~ .wrap .sp-legal{display:block}
+
+#drv-connected:checked ~ .wrap .chrome label[for="drv-connected"],
+#drv-conflict:checked ~ .wrap .chrome label[for="drv-conflict"],
+#drv-skel:checked ~ .wrap .chrome label[for="drv-skel"],
+#sup-queue:checked ~ .wrap .chrome label[for="sup-queue"],
+#sup-community:checked ~ .wrap .chrome label[for="sup-community"],
+#prt-import:checked ~ .wrap .chrome label[for="prt-import"],
+#prt-gc:checked ~ .wrap .chrome label[for="prt-gc"],
+#leg-privacy:checked ~ .wrap .chrome label[for="leg-privacy"],
+#leg-pro:checked ~ .wrap .chrome label[for="leg-pro"]{background:#3A3530;color:#F3EFE7}
+
+/* ---------- Marco del Teléfono y Tokens de Tema ---------- */
+.phone{
+  --bg:#FAF7F2;
+  --fg:#1C1917;
+  --muted:#6B6560;
+  --surf:#EFEAE1;
+  --card:#FFFDF8;
+  --line:#D8CFC0;
+  --pri:#1E4635;
+  --pri-fg:#FAF7F2;
+  --acc:#B85F30;
+  --gold:#C98A2C;
+  --danger:#C83E32;
+  --ok:#16803C;
+  --info:#2563EB;
+  border-radius:36px;
+  border:5px solid #2E2A27;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.5)
+}
+#thm-night:checked ~ .wrap .phone{
+  --bg:#161412;
+  --fg:#F3EFE7;
+  --muted:#A8A29E;
+  --surf:#221F1C;
+  --card:#2C2824;
+  --line:#3F3933;
+  --pri:#2E6A50;
+  --pri-fg:#FAF7F2;
+  --acc:#C96E3C;
+  --gold:#E9A23B;
+  --danger:#E5674D;
+  --ok:#22C55E;
+  --info:#60A5FA;
+}
+
+.scr{display:none;min-height:770px;flex-direction:column;justify-content:space-between}
+#scr-drive:checked ~ .wrap #s-drive,
+#scr-supabase:checked ~ .wrap #s-supabase,
+#scr-portability:checked ~ .wrap #s-portability,
+#scr-legal:checked ~ .wrap #s-legal{display:flex}
+
+.sbar{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 20px 10px}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.3px;line-height:1.15}
+.muted{color:var(--muted);font-size:12px}
+
+/* ---------- Componentes Comunes ---------- */
+.pill{font-size:11px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--pri);color:var(--pri-fg);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pill.acc{background:var(--acc);color:#fff}
+.pill.soft{background:var(--surf);color:var(--fg);border:1px solid var(--line)}
+.pill.gold{background:rgba(201,138,44,.18);color:var(--fg);border:1px solid var(--gold)}
+.pill.danger{background:rgba(200,62,50,.15);color:var(--danger);border:1px solid var(--danger)}
+.pill.ok{background:rgba(22,128,60,.15);color:var(--ok);border:1px solid var(--ok)}
+.pill.info{background:rgba(37,99,235,.15);color:var(--info);border:1px solid var(--info)}
+
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surf);border-radius:14px;padding:4px;gap:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg label{min-height:36px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border-radius:15px;background:var(--pri);color:var(--pri-fg);font-size:13px;font-weight:700;border:none;cursor:pointer}
+.cta.acc{background:var(--acc);color:#fff}
+.cta.danger{background:var(--danger);color:#fff}
+.btn2{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:42px;border-radius:13px;background:var(--surf);color:var(--fg);font-size:12px;font-weight:600;margin-top:8px;border:1px solid var(--line);cursor:pointer}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px;margin-bottom:11px}
+.card-sub{background:var(--surf);border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin-top:8px}
+
+.bar{height:8px;background:var(--surf);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.bar > i{display:block;height:100%;background:var(--pri);border-radius:99px}
+
+/* Subvistas condicionales */
+.v-drv-connected,.v-drv-conflict,.v-drv-skel{display:none}
+#drv-connected:checked ~ .wrap .v-drv-connected{display:block}
+#drv-conflict:checked ~ .wrap .v-drv-conflict{display:block}
+#drv-skel:checked ~ .wrap .v-drv-skel{display:block}
+
+.v-sup-queue,.v-sup-community{display:none}
+#sup-queue:checked ~ .wrap .v-sup-queue{display:block}
+#sup-community:checked ~ .wrap .v-sup-community{display:block}
+
+.v-prt-import,.v-prt-gc{display:none}
+#prt-import:checked ~ .wrap .v-prt-import{display:block}
+#prt-gc:checked ~ .wrap .v-prt-gc{display:block}
+
+.v-leg-privacy,.v-leg-pro{display:none}
+#leg-privacy:checked ~ .wrap .v-leg-privacy{display:block}
+#leg-pro:checked ~ .wrap .v-leg-pro{display:block}
+
+/* Resaltado en selectores internos */
+#drv-connected:checked ~ .wrap .seg label[for="drv-connected"],
+#drv-conflict:checked ~ .wrap .seg label[for="drv-conflict"],
+#drv-skel:checked ~ .wrap .seg label[for="drv-skel"],
+#sup-queue:checked ~ .wrap .seg label[for="sup-queue"],
+#sup-community:checked ~ .wrap .seg label[for="sup-community"],
+#prt-import:checked ~ .wrap .seg label[for="prt-import"],
+#prt-gc:checked ~ .wrap .seg label[for="prt-gc"],
+#leg-privacy:checked ~ .wrap .seg label[for="leg-privacy"],
+#leg-pro:checked ~ .wrap .seg label[for="leg-pro"]{background:var(--card);color:var(--fg);box-shadow:0 2px 6px rgba(0,0,0,.08)}
+
+/* Skeletons */
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:.95}}
+.sk-box{background:var(--surf);border:1px solid var(--line);border-radius:12px;animation:pulse 1.5s infinite ease-in-out}
+
+/* Tab bar inferior */
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:8px 6px 14px}
+.tab{display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:600;color:var(--muted);padding:4px 0;border-radius:10px}
+.tab.active{color:var(--pri);font-weight:700}
+
+.kv-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:12px}
+.kv-row:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+
+<!-- Radios de Pantalla Principal -->
+<input class="st" type="radio" name="scr" id="scr-drive" checked />
+<input class="st" type="radio" name="scr" id="scr-supabase" />
+<input class="st" type="radio" name="scr" id="scr-portability" />
+<input class="st" type="radio" name="scr" id="scr-legal" />
+
+<!-- Radios de Tema -->
+<input class="st" type="radio" name="thm" id="thm-day" checked />
+<input class="st" type="radio" name="thm" id="thm-night" />
+
+<!-- Subestados Pantalla 1: Respaldo en Google Drive -->
+<input class="st" type="radio" name="drv-sub" id="drv-connected" checked />
+<input class="st" type="radio" name="drv-sub" id="drv-conflict" />
+<input class="st" type="radio" name="drv-sub" id="drv-skel" />
+
+<!-- Subestados Pantalla 2: Libros Pendientes y Comunidad -->
+<input class="st" type="radio" name="sup-sub" id="sup-queue" checked />
+<input class="st" type="radio" name="sup-sub" id="sup-community" />
+
+<!-- Subestados Pantalla 3: Importar/Exportar y Espacio -->
+<input class="st" type="radio" name="prt-sub" id="prt-import" checked />
+<input class="st" type="radio" name="prt-sub" id="prt-gc" />
+
+<!-- Subestados Pantalla 4: Privacidad y Plan -->
+<input class="st" type="radio" name="leg-sub" id="leg-privacy" checked />
+<input class="st" type="radio" name="leg-sub" id="leg-pro" />
+
+<div class="wrap">
+  <!-- Panel de Control del Prototipo -->
+  <div class="chrome">
+    <div class="chrome-top">
+      <span><strong>BaciBooks</strong> · Vista Previa de Pantallas</span>
+      <span class="tag">Versión 1.0</span>
+    </div>
+
+    <div class="tg-grid">
+      <label class="tg" for="scr-drive">1. Respaldo en Nube</label>
+      <label class="tg" for="scr-supabase">2. Libros Pendientes</label>
+      <label class="tg" for="scr-portability">3. Importar y Espacio</label>
+      <label class="tg" for="scr-legal">4. Privacidad y Plan</label>
+    </div>
+
+    <div class="tg-grid" style="margin-top:6px">
+      <label class="tg" for="thm-day">Tema Día (Papel)</label>
+      <label class="tg" for="thm-night">Tema Noche</label>
+    </div>
+
+    <!-- Subcontroles contextuales -->
+    <div class="subpanel sp-drive">
+      <div class="subpanel-title"><span>Vista de Respaldo:</span><span>Google Drive</span></div>
+      <div class="tg-grid three">
+        <label class="tg" for="drv-connected">Cuenta Activa</label>
+        <label class="tg" for="drv-conflict">Aviso de Avance</label>
+        <label class="tg" for="drv-skel">Cargando</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-supabase">
+      <div class="subpanel-title"><span>Libros y Ediciones:</span><span>Sin Conexión / Comunidad</span></div>
+      <div class="tg-grid">
+        <label class="tg" for="sup-queue">Escaneados sin Internet</label>
+        <label class="tg" for="sup-community">Mis Aportes de Edición</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-portability">
+      <div class="subpanel-title"><span>Biblioteca y Memoria:</span><span>Importar / Espacio</span></div>
+      <div class="tg-grid">
+        <label class="tg" for="prt-import">Traer de Goodreads / Excel</label>
+        <label class="tg" for="prt-gc">Liberar Espacio</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-legal">
+      <div class="subpanel-title"><span>Ajustes de Cuenta:</span><span>Privacidad y Suscripción</span></div>
+      <div class="tg-grid">
+        <label class="tg" for="leg-privacy">Privacidad y Mis Datos</label>
+        <label class="tg" for="leg-pro">Mi Plan BaciBooks</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARCO DEL TELÉFONO -->
+  <div class="phone">
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 1: RESPALDO EN GOOGLE DRIVE                              -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-drive">
+      <div>
+        <div class="sbar">
+          <span class="mono">09:41</span>
+          <span>Ajustes y Respaldo</span>
+        </div>
+
+        <div class="hdr">
+          <div>
+            <div class="h1 serif">Respaldo en la Nube</div>
+            <div class="muted">Tus libros seguros en tu propio Google Drive</div>
+          </div>
+          <span class="pill ok">Al día</span>
+        </div>
+
+        <div style="padding:0 16px">
+          <div class="seg" style="margin-bottom:12px">
+            <label for="drv-connected">Mi Respaldo</label>
+            <label for="drv-conflict">Sincronización</label>
+            <label for="drv-skel">Cargando</label>
+          </div>
+
+          <!-- Vista 1A: Conectado -->
+          <div class="v-drv-connected">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <div>
+                  <div style="font-size:14px;font-weight:700">eduardo.bacilio@gmail.com</div>
+                  <div class="muted">Cuenta de Google vinculada</div>
+                </div>
+                <span class="pill ok">Conectado</span>
+              </div>
+
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span class="muted">Última copia guardada</span>
+                  <strong class="mono">Hoy, 09:38 AM (hace 3 min)</strong>
+                </div>
+                <div class="kv-row">
+                  <span class="muted">Biblioteca respaldada</span>
+                  <strong class="mono">68 libros · 142 lecturas · 39 citas</strong>
+                </div>
+                <div class="kv-row">
+                  <span class="muted">Portadas guardadas</span>
+                  <strong class="mono">68 portadas (4.1 MB)</strong>
+                </div>
+              </div>
+
+              <div style="margin-top:10px">
+                <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px">
+                  <span class="muted">Espacio ocupado en tu Google Drive</span>
+                  <strong class="mono">Menos del 1% (4.1 MB de 15 GB)</strong>
+                </div>
+                <div class="bar"><i style="width:6%"></i></div>
+              </div>
+
+              <div style="margin-top:12px">
+                <button class="cta">Guardar copia ahora</button>
+                <button class="btn2">Recuperar biblioteca en este teléfono</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div>
+                  <div style="font-size:13px;font-weight:700">Respaldo Automático</div>
+                  <div class="muted">Se guarda solo al terminar de leer</div>
+                </div>
+                <span class="pill gold">Activado</span>
+              </div>
+              <div class="card-sub" style="margin-top:10px;font-size:11px;color:var(--muted)">
+                <strong>Tu privacidad primero:</strong> BaciBooks guarda tu copia en un espacio privado de tu cuenta y nunca puede ver tus fotos, correos ni archivos personales.
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista 1B: Aviso de diferencia de lectura entre dispositivos -->
+          <div class="v-drv-conflict">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700"> ¿En qué página vas?</span>
+                <span class="pill acc">Por confirmar</span>
+              </div>
+              <p class="muted" style="margin-bottom:10px">
+                Ya unimos tus sesiones de lectura y tus citas recientes. Solo dinos cuál de estos avances quieres conservar para este libro:
+              </p>
+
+              <div class="card-sub">
+                <div style="font-size:13px;font-weight:700;margin-bottom:6px">El problema de los tres cuerpos — Cixin Liu</div>
+                <div class="kv-row">
+                  <span>En este teléfono (Hoy 09:30 AM)</span>
+                  <strong class="mono" style="color:var(--pri)">Página 284 de 416 (68%)</strong>
+                </div>
+                <div class="kv-row">
+                  <span>En tu copia anterior (Ayer 11:15 PM)</span>
+                  <strong class="mono">Página 240 de 416 (57%)</strong>
+                </div>
+              </div>
+
+              <div style="margin-top:10px">
+                <button class="cta">Quedarme en la página 284 (Más reciente)</button>
+                <button class="btn2">Volver a la página 240</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista 1C: Cargando -->
+          <div class="v-drv-skel">
+            <div class="card">
+              <div class="sk-box" style="height:20px;width:65%;margin-bottom:8px"></div>
+              <div class="sk-box" style="height:14px;width:85%;margin-bottom:14px"></div>
+              <div class="sk-box" style="height:110px;width:100%;margin-bottom:12px"></div>
+              <div class="sk-box" style="height:48px;width:100%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <label class="tab" for="scr-drive">Mi Librero</label>
+        <label class="tab" for="scr-supabase">Pendientes</label>
+        <label class="tab" for="scr-portability">Importar</label>
+        <label class="tab" for="scr-legal">Privacidad</label>
+        <label class="tab active" for="scr-drive">Respaldo</label>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 2: LIBROS ESCANEADOS SIN INTERNET Y EDICIONES            -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-supabase">
+      <div>
+        <div class="sbar">
+          <span class="mono">09:41</span>
+          <span>Libros por Completar</span>
+        </div>
+
+        <div class="hdr">
+          <div>
+            <div class="h1 serif">Libros Pendientes</div>
+            <div class="muted">Ejemplares escaneados cuando no tenías señal</div>
+          </div>
+          <span class="pill acc">2 por completar</span>
+        </div>
+
+        <div style="padding:0 16px">
+          <div class="seg two" style="margin-bottom:12px">
+            <label for="sup-queue">Escaneados sin Internet</label>
+            <label for="sup-community">Mis Aportes</label>
+          </div>
+
+          <!-- Vista 2A: Libros escaneados sin señal -->
+          <div class="v-sup-queue">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700">Listos para descargar su portada</span>
+                <span class="pill info">Con internet</span>
+              </div>
+              <p class="muted" style="margin-bottom:10px">
+                Guardamos el código y el librero donde pusiste estos libros mientras estabas sin conexión. Toca abajo para completar sus títulos y portadas:
+              </p>
+
+              <div class="card-sub">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div class="mono" style="font-size:13px;font-weight:700">Código 9788437604947</div>
+                    <div class="muted">Guardado en: Librero Sala · Repisa 2</div>
+                  </div>
+                  <span class="pill soft">Por completar</span>
+                </div>
+              </div>
+
+              <div class="card-sub">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div class="mono" style="font-size:13px;font-weight:700">Código 9786073154925</div>
+                    <div class="muted">Guardado en: Librero Estudio · Repisa 1</div>
+                  </div>
+                  <span class="pill soft">Por completar</span>
+                </div>
+              </div>
+
+              <div style="margin-top:12px">
+                <button class="cta">Completar portadas y datos (2 libros)</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista 2B: Aportes de Ediciones a la Comunidad -->
+          <div class="v-sup-community">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700">Ediciones compartidas con otros lectores</span>
+                <span class="pill ok">Comunidad</span>
+              </div>
+              <p class="muted" style="margin-bottom:10px">
+                Cuando corriges la editorial o fotografías la portada de un libro poco común, ayudas a que otros lectores encuentren su edición exacta.
+              </p>
+
+              <div class="card-sub">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <strong style="font-size:12px">Pedro Páramo (Edición Cátedra)</strong>
+                  <span class="pill ok">Confirmada</span>
+                </div>
+                <div class="muted">Editorial y 192 páginas verificadas por la comunidad lectora.</div>
+              </div>
+
+              <div class="card-sub">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                  <strong style="font-size:12px">Temporada de huracanes (Random House)</strong>
+                  <span class="pill gold">En revisión</span>
+                </div>
+                <div class="muted">Gracias por compartir la portada y editorial de esta edición.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <label class="tab" for="scr-drive">Mi Librero</label>
+        <label class="tab active" for="scr-supabase">Pendientes</label>
+        <label class="tab" for="scr-portability">Importar</label>
+        <label class="tab" for="scr-legal">Privacidad</label>
+        <label class="tab" for="scr-drive">Respaldo</label>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 3: IMPORTAR BIBLIOTECA Y LIBERAR ESPACIO                 -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-portability">
+      <div>
+        <div class="sbar">
+          <span class="mono">09:41</span>
+          <span>Tus Libros y Espacio</span>
+        </div>
+
+        <div class="hdr">
+          <div>
+            <div class="h1 serif">Importar y Espacio</div>
+            <div class="muted">Trae tus libros de otras apps o descarga tu lista</div>
+          </div>
+          <span class="pill soft">Tus datos son tuyos</span>
+        </div>
+
+        <div style="padding:0 16px">
+          <div class="seg two" style="margin-bottom:12px">
+            <label for="prt-import">Importar / Descargar</label>
+            <label for="prt-gc">Espacio en Teléfono</label>
+          </div>
+
+          <!-- Vista 3A: Importar desde Goodreads / Excel -->
+          <div class="v-prt-import">
+            <div class="card">
+              <div style="font-size:14px;font-weight:700;margin-bottom:4px">Traer mis libros de Goodreads, StoryGraph o Excel</div>
+              <p class="muted" style="margin-bottom:10px">
+                Selecciona el archivo exportado de tu otra aplicación y sumaremos tus libros, calificaciones y fechas de lectura sin repetir los que ya tienes.
+              </p>
+
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span>Archivo seleccionado</span>
+                  <strong class="mono">mis_libros_goodreads.csv</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Libros nuevos encontrados</span>
+                  <strong class="mono">42 libros (3 ya estaban en tu librero)</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Tus lecturas</span>
+                  <strong class="mono">28 Leídos · 11 Por leer · 3 Leyendo</strong>
+                </div>
+              </div>
+
+              <div style="margin-top:10px">
+                <button class="cta">Agregar 42 libros a mi librero</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="font-size:14px;font-weight:700;margin-bottom:4px">Descargar mi biblioteca</div>
+              <p class="muted" style="margin-bottom:8px">
+                Guarda una lista completa de tus libros, notas y frases favoritas para abrirla en Excel o tener una copia en tu teléfono.
+              </p>
+              <button class="btn2">Descargar lista para Excel</button>
+              <button class="btn2">Guardar archivo de respaldo completo</button>
+            </div>
+          </div>
+
+          <!-- Vista 3B: Liberar espacio en el teléfono -->
+          <div class="v-prt-gc">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700">Espacio ocupado por portadas</span>
+                <span class="pill acc">268 KB por liberar</span>
+              </div>
+              <p class="muted" style="margin-bottom:10px">
+                Cuando cambias la portada de un libro o lo quitas de tu librero, podemos borrar las imágenes antiguas para que no ocupen memoria en tu celular.
+              </p>
+
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span>Portadas de tus libros actuales</span>
+                  <strong class="mono">68 portadas (4.1 MB)</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Imágenes antiguas que ya no se usan</span>
+                  <strong class="mono" style="color:var(--acc)">4 imágenes (268 KB)</strong>
+                </div>
+              </div>
+
+              <div style="margin-top:12px">
+                <button class="cta acc">Liberar espacio de portadas no usadas</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <label class="tab" for="scr-drive">Mi Librero</label>
+        <label class="tab" for="scr-supabase">Pendientes</label>
+        <label class="tab active" for="scr-portability">Importar</label>
+        <label class="tab" for="scr-legal">Privacidad</label>
+        <label class="tab" for="scr-drive">Respaldo</label>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 4: PRIVACIDAD, TÉRMINOS Y MI PLAN BACIBOOKS              -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-legal">
+      <div>
+        <div class="sbar">
+          <span class="mono">09:41</span>
+          <span>Cuenta y Privacidad</span>
+        </div>
+
+        <div class="hdr">
+          <div>
+            <div class="h1 serif">Privacidad y Mi Plan</div>
+            <div class="muted">Control total sobre tu información y tu cuenta</div>
+          </div>
+          <span class="pill">Versión 1.0</span>
+        </div>
+
+        <div style="padding:0 16px">
+          <div class="seg two" style="margin-bottom:12px">
+            <label for="leg-privacy">Privacidad y Datos</label>
+            <label for="leg-pro">Mi Plan BaciBooks</label>
+          </div>
+
+          <!-- Vista 4A: Privacidad, Términos y Borrar mis datos -->
+          <div class="v-leg-privacy">
+            <div class="card">
+              <div style="font-size:14px;font-weight:700;margin-bottom:6px">Información Legal y Privacidad</div>
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span>Uso personal de portadas y citas</span>
+                  <span class="pill soft">Leer</span>
+                </div>
+                <div class="kv-row">
+                  <span>Sobre las sugerencias del Detective Literario</span>
+                  <span class="pill soft">Leer</span>
+                </div>
+                <div class="kv-row">
+                  <span>Cómo protegemos tu privacidad y tu nube</span>
+                  <span class="pill soft">Leer</span>
+                </div>
+                <div class="kv-row">
+                  <span>Términos de uso y suscripciones</span>
+                  <span class="pill soft">Leer</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="border-color:var(--danger)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700;color:var(--danger)">Borrar mi biblioteca y mis datos</span>
+                <span class="pill danger">Acción permanente</span>
+              </div>
+              <p class="muted" style="margin-bottom:10px">
+                Si deseas empezar de cero o dejar de usar la aplicación, puedes eliminar todos tus libros, notas, citas y copias guardadas en la nube.
+              </p>
+              <button class="cta danger">Eliminar todos mis datos</button>
+            </div>
+          </div>
+
+          <!-- Vista 4B: Mi Plan BaciBooks Pro -->
+          <div class="v-leg-pro">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span style="font-size:14px;font-weight:700">Tu membresía actual</span>
+                <span class="pill gold">BaciBooks Pro</span>
+              </div>
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span>Registro de libros físicos y digitales</span>
+                  <strong class="mono">Ilimitado</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Búsquedas con el Detective Literario</span>
+                  <strong class="mono">Ilimitadas</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Experiencia de lectura</span>
+                  <strong class="mono">Sin anuncios</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Diseños de postales y respaldo automático</span>
+                  <strong class="mono">Incluidos</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="card">
+              <div style="font-size:14px;font-weight:700;margin-bottom:6px">Acerca de BaciBooks</div>
+              <div class="card-sub">
+                <div class="kv-row">
+                  <span>Versión instalada</span>
+                  <strong class="mono">1.0.0</strong>
+                </div>
+                <div class="kv-row">
+                  <span>Modo sin internet</span>
+                  <strong class="mono">Siempre disponible</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabs">
+        <label class="tab" for="scr-drive">Mi Librero</label>
+        <label class="tab" for="scr-supabase">Pendientes</label>
+        <label class="tab" for="scr-portability">Importar</label>
+        <label class="tab active" for="scr-legal">Privacidad</label>
+        <label class="tab" for="scr-drive">Respaldo</label>
+      </div>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
