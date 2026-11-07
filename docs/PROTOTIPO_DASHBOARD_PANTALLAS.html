@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BaciBooks — Prototipo Interactivo: Dashboard Principal y Centro de Mando de Lectura</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+input.st{display:none}
+label{cursor:pointer;user-select:none}
+.wrap{max-width:414px;margin:0 auto}
+.hscroll{scrollbar-width:none;overflow-x:auto}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Controles Superiores del Prototipo ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.three{grid-template-columns:repeat(3,1fr)}
+.tg{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:12px;font-weight:600;padding:8px 4px;border-radius:9px;color:#A8A29E;transition:all .15s ease}
+.subpanel{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #2E2A27}
+.subpanel-title{font-size:12px;color:#A8A29E;margin-bottom:4px;display:flex;justify-content:space-between}
+
+/* Activacion de pestanas principales */
+#scr-active:checked ~ .wrap .chrome label[for="scr-active"],
+#scr-idle:checked ~ .wrap .chrome label[for="scr-idle"],
+#scr-manual:checked ~ .wrap .chrome label[for="scr-manual"],
+#scr-nav:checked ~ .wrap .chrome label[for="scr-nav"]{background:#B85F30;color:#fff}
+
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+
+#scr-active:checked ~ .wrap .sp-active,
+#scr-idle:checked ~ .wrap .sp-idle,
+#scr-manual:checked ~ .wrap .sp-manual,
+#scr-nav:checked ~ .wrap .sp-nav{display:block}
+
+/* ---------- Marco del Telefono y Tokens de Tema ---------- */
+.phone{
+  --bg:#FAF7F2;
+  --fg:#1C1917;
+  --muted:#6B6560;
+  --surf:#EFEAE1;
+  --card:#FFFDF8;
+  --line:#D8CFC0;
+  --pri:#1E4635;
+  --pri-fg:#FAF7F2;
+  --acc:#B85F30;
+  --gold:#C98A2C;
+  --danger:#C83E32;
+  --ok:#16803C;
+  --info:#2563EB;
+  border-radius:36px;
+  border:5px solid #2E2A27;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.6);
+  min-height:760px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+
+#thm-night:checked ~ .wrap .phone{
+  --bg:#141210;
+  --fg:#F3EFE7;
+  --muted:#A39B92;
+  --surf:#201D1A;
+  --card:#26221E;
+  --line:#38322C;
+  --pri:#2D5A46;
+  --pri-fg:#FAF7F2;
+  --acc:#D97736;
+  --gold:#E5A645;
+  --danger:#E05648;
+  --ok:#22A04F;
+  --info:#3B82F6;
+}
+
+/* Barra de estado */
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 18px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+
+/* Pantallas intercambiables */
+.scr{display:none;padding:12px 16px 20px;flex:1}
+#scr-active:checked ~ .wrap #s-active{display:block}
+#scr-idle:checked ~ .wrap #s-idle{display:block}
+#scr-manual:checked ~ .wrap #s-manual{display:block}
+#scr-nav:checked ~ .wrap #s-nav{display:block}
+
+/* Header del Dashboard */
+.dash-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.dash-kicker{font-size:12px;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.5px}
+.dash-title{font-size:22px;font-weight:800;color:var(--fg);letter-spacing:-0.4px}
+.hdr-icons{display:flex;gap:8px;align-items:center}
+.icon-btn{width:38px;height:38px;border-radius:19px;border:1px solid var(--line);background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--pri);position:relative}
+.badge-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--acc);border:1.5px solid var(--card)}
+
+/* Hero Card: Lectura Activa */
+.hero-book{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:16px;box-shadow:0 4px 14px rgba(0,0,0,0.04);position:relative;overflow:hidden}
+.hero-tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--pri);background:var(--surf);padding:3px 8px;border-radius:999px;margin-bottom:10px}
+.hero-body{display:flex;gap:14px;align-items:flex-start}
+.hero-cover{width:84px;height:124px;border-radius:8px;background:linear-gradient(135deg,#1E4635,#2E5A46);color:#FFF;display:flex;flex-direction:column;justify-content:space-between;padding:8px;box-shadow:0 4px 10px rgba(0,0,0,0.2);flex-shrink:0}
+.hero-cover-title{font-size:10px;font-weight:700;line-height:1.2}
+.hero-cover-author{font-size:8px;opacity:0.8}
+.hero-info{flex:1;min-width:0}
+.hero-title{font-size:16px;font-weight:800;color:var(--fg);margin-bottom:2px;line-height:1.2}
+.hero-author{font-size:13px;color:var(--muted);margin-bottom:8px}
+.hero-progress-text{display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--fg);margin-bottom:5px}
+.bar-track{width:100%;height:8px;background:var(--surf);border-radius:999px;overflow:hidden;margin-bottom:12px}
+.bar-fill{height:100%;background:var(--acc);border-radius:999px}
+.hero-actions{display:flex;gap:8px}
+.btn-cta{flex:1;background:var(--pri);color:var(--pri-fg);border:none;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+.btn-sec{background:var(--surf);color:var(--fg);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;font-weight:600;display:flex;align-items:center;justify-content:center}
+
+/* Cuadricula de Atajos Rapidos */
+.section-label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px}
+.shortcuts-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.shortcut-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;align-items:center;gap:10px;transition:transform .1s ease}
+.shortcut-icon-box{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.shortcut-icon-box.green{background:#E8F3EE;color:#1E4635}
+.shortcut-icon-box.terracota{background:#F8ECE5;color:#B85F30}
+.shortcut-icon-box.gold{background:#FAF3E3;color:#C98A2C}
+.shortcut-icon-box.blue{background:#EBF2FE;color:#2563EB}
+.shortcut-text{min-width:0}
+.shortcut-name{font-size:13px;font-weight:700;color:var(--fg);line-height:1.2}
+.shortcut-desc{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* Widget de Pulso y Racha */
+.streak-widget{background:linear-gradient(135deg,rgba(30,70,53,0.06),rgba(184,95,48,0.08));border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.streak-left{display:flex;align-items:center;gap:10px}
+.streak-circle{width:40px;height:40px;border-radius:20px;background:var(--card);border:1.5px solid var(--acc);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--acc);font-size:15px}
+.streak-title{font-size:13px;font-weight:700;color:var(--fg)}
+.streak-sub{font-size:11px;color:var(--muted)}
+.streak-btn{font-size:12px;font-weight:700;color:var(--pri);padding:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:8px}
+
+/* Seccion: En mi mesita de noche / Lecturas recientes */
+.recent-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.recent-title{font-size:14px;font-weight:700;color:var(--fg)}
+.recent-link{font-size:12px;font-weight:700;color:var(--acc)}
+.shelf-preview{display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px}
+.shelf-book-card{width:88px;flex-shrink:0}
+.shelf-thumb{width:88px;height:128px;border-radius:8px;background:var(--surf);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;padding:8px;margin-bottom:6px;box-shadow:0 3px 8px rgba(0,0,0,0.05)}
+.shelf-book-title{font-size:12px;font-weight:700;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.shelf-book-author{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Widget Condicional de Prestamos */
+.loan-alert{background:#FFF9EB;border:1px solid #F0DFB0;border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.loan-alert-text{font-size:12px;color:#855A00;font-weight:600}
+.loan-alert-action{font-size:11px;font-weight:700;color:#855A00;text-decoration:underline}
+
+/* Barra de Navegacion Inferior (5 Tabs con Escanear Central Destacado) */
+.nav-bar{background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);align-items:center;padding:6px 4px 14px}
+.nav-tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--muted);padding:2px 0}
+.nav-tab.active{color:var(--pri);font-weight:700}
+.nav-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center}
+.nav-scan-wrapper{display:flex;flex-direction:column;align-items:center;position:relative;margin-top:-16px}
+.nav-scan-btn{width:46px;height:46px;border-radius:23px;background:var(--pri);color:var(--pri-fg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(30,70,53,0.35);border:2px solid var(--card)}
+.nav-scan-label{font-size:10px;font-weight:700;color:var(--pri);margin-top:2px}
+
+/* Tarjeta Estado Despejado (Sin Lectura Activa) */
+.idle-card{background:var(--card);border:1.5px dashed var(--line);border-radius:20px;padding:24px 16px;text-align:center;margin-bottom:16px}
+.idle-icon-wrap{width:56px;height:56px;border-radius:28px;background:var(--surf);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:var(--pri)}
+.idle-title{font-size:16px;font-weight:800;color:var(--fg);margin-bottom:4px}
+.idle-desc{font-size:13px;color:var(--muted);margin-bottom:14px;max-width:280px;margin-left:auto;margin-right:auto}
+.idle-btn-row{display:flex;gap:8px;justify-content:center}
+
+/* Modal Bottom Sheet: Registro Rapido */
+.sheet-overlay{background:rgba(0,0,0,0.4);border-radius:30px;padding:14px 14px 24px;display:flex;flex-direction:column;justify-content:flex-end;min-height:700px}
+.sheet-card{background:var(--card);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:0 -8px 24px rgba(0,0,0,0.15)}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 12px}
+.sheet-title{font-size:17px;font-weight:800;color:var(--fg);margin-bottom:4px}
+.sheet-subtitle{font-size:12px;color:var(--muted);margin-bottom:14px}
+.sheet-input-group{margin-bottom:12px}
+.sheet-label{font-size:12px;font-weight:700;color:var(--fg);margin-bottom:6px;display:block}
+.sheet-picker-row{display:flex;gap:8px;margin-bottom:12px}
+.pill-choice{flex:1;text-align:center;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surf);font-size:12px;font-weight:600;color:var(--fg)}
+.pill-choice.active{background:var(--pri);color:var(--pri-fg);border-color:var(--pri)}
+.page-stepper{display:flex;align-items:center;gap:10px;background:var(--surf);padding:8px 12px;border-radius:12px;border:1px solid var(--line)}
+.step-btn{width:32px;height:32px;border-radius:8px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;color:var(--fg)}
+.step-val{flex:1;text-align:center;font-size:16px;font-weight:800;color:var(--fg)}
+</style>
+</head>
+<body>
+
+<!-- Radios de Navegacion de Pantallas del Prototipo -->
+<input class="st" type="radio" name="scr" id="scr-active" checked />
+<input class="st" type="radio" name="scr" id="scr-idle" />
+<input class="st" type="radio" name="scr" id="scr-manual" />
+<input class="st" type="radio" name="scr" id="scr-nav" />
+
+<!-- Radios de Tema -->
+<input class="st" type="radio" name="thm" id="thm-day" checked />
+<input class="st" type="radio" name="thm" id="thm-night" />
+
+<div class="wrap">
+  <!-- Chrome de Control para Evaluacion de UX -->
+  <div class="chrome">
+    <div class="chrome-top">
+      <span class="tag">BaciBooks · Dashboard Principal</span>
+      <span>Centro de Mando de Lectura</span>
+    </div>
+
+    <!-- Selector de Escenarios -->
+    <div class="tg-grid">
+      <label class="tg" for="scr-active">Lectura Activa</label>
+      <label class="tg" for="scr-idle">Sin Lectura (Despejado)</label>
+      <label class="tg" for="scr-manual">Atajo Registro Rápido</label>
+      <label class="tg" for="scr-nav">Mapa de Navegación</label>
+    </div>
+
+    <!-- Selector de Tema -->
+    <div class="tg-grid" style="margin-top:6px">
+      <label class="tg" for="thm-day">Modo Día (Crema Cálido)</label>
+      <label class="tg" for="thm-night">Modo Noche (Sepia Oscuro)</label>
+    </div>
+  </div>
+
+  <!-- Dispositivo Movil Simulado -->
+  <div class="phone">
+    <div class="sbar">
+      <span class="mono">09:41</span>
+      <span>BaciBooks</span>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 1: DASHBOARD CON LECTURA ACTIVA (CASO PRINCIPAL)         -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-active">
+      <!-- Encabezado con Saludo y Accesos Rapidos -->
+      <div class="dash-hdr">
+        <div>
+          <div class="dash-kicker">Buenos días, Eduardo</div>
+          <div class="dash-title">Mi Espacio de Lectura</div>
+        </div>
+        <div class="hdr-icons">
+          <div class="icon-btn" title="Respaldo en la Nube">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>
+            <div class="badge-dot" title="Respaldo al día"></div>
+          </div>
+          <div class="icon-btn" title="¿Qué leo hoy?">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Hero: Libro en Curso con Boton Directo -->
+      <div class="hero-book">
+        <div class="hero-tag">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Leyendo ahora mismo
+        </div>
+        <div class="hero-body">
+          <div class="hero-cover">
+            <div class="hero-cover-title serif">Cien años de soledad</div>
+            <div class="hero-cover-author">G. García Márquez</div>
+          </div>
+          <div class="hero-info">
+            <div class="hero-title serif">Cien años de soledad</div>
+            <div class="hero-author">Gabriel García Márquez · Sudamericana</div>
+            <div class="hero-progress-text">
+              <span>Pág. 184 de 471</span>
+              <span class="mono">39%</span>
+            </div>
+            <div class="bar-track">
+              <div class="bar-fill" style="width:39%"></div>
+            </div>
+            <div class="hero-actions">
+              <button class="btn-cta">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Continuar Leyendo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuadricula de 4 Atajos Rapidos -->
+      <div class="section-label">Acciones Rápidas</div>
+      <div class="shortcuts-grid">
+        <label class="shortcut-card" for="scr-manual">
+          <div class="shortcut-icon-box green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">Avanzar Páginas</div>
+            <div class="shortcut-desc">Registrar sin reloj</div>
+          </div>
+        </label>
+
+        <div class="shortcut-card">
+          <div class="shortcut-icon-box terracota">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">Capturar Frase</div>
+            <div class="shortcut-desc">Foto de página</div>
+          </div>
+        </div>
+
+        <div class="shortcut-card">
+          <div class="shortcut-icon-box gold">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">Libros Por Leer</div>
+            <div class="shortcut-desc">14 en mi cola</div>
+          </div>
+        </div>
+
+        <div class="shortcut-card">
+          <div class="shortcut-icon-box blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">¿Qué leo hoy?</div>
+            <div class="shortcut-desc">Elegir lectura</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget de Pulso y Racha -->
+      <div class="streak-widget">
+        <div class="streak-left">
+          <div class="streak-circle mono">6d</div>
+          <div>
+            <div class="streak-title">Racha de 6 días seguidos</div>
+            <div class="streak-sub">22 de 30 min leídos hoy · Meta diaria</div>
+          </div>
+        </div>
+        <button class="streak-btn">Ver Metas</button>
+      </div>
+
+      <!-- Widget Condicional de Prestamos -->
+      <div class="loan-alert">
+        <div class="loan-alert-text">
+          Prestaste «El principito» a Sofía · Vence en 3 días
+        </div>
+        <span class="loan-alert-action">Gestionar</span>
+      </div>
+
+      <!-- Seccion: Mi Mesita de Noche / Acceso al Librero Completo -->
+      <div class="recent-row">
+        <div class="recent-title">En Mi Mesita de Noche</div>
+        <div class="recent-link">Ver todo mi librero (42) →</div>
+      </div>
+      <div class="shelf-preview hscroll">
+        <div class="shelf-book-card">
+          <div class="shelf-thumb">
+            <div style="font-size:9px;font-weight:700">Ficciones</div>
+            <div style="font-size:8px;color:var(--muted)">J.L. Borges</div>
+          </div>
+          <div class="shelf-book-title">Ficciones</div>
+          <div class="shelf-book-author">Por leer</div>
+        </div>
+
+        <div class="shelf-book-card">
+          <div class="shelf-thumb" style="border-left:3px solid var(--pri)">
+            <div style="font-size:9px;font-weight:700">El nombre del viento</div>
+            <div style="font-size:8px;color:var(--muted)">P. Rothfuss</div>
+          </div>
+          <div class="shelf-book-title">El nombre del viento</div>
+          <div class="shelf-book-author">En espera</div>
+        </div>
+
+        <div class="shelf-book-card">
+          <div class="shelf-thumb">
+            <div style="font-size:9px;font-weight:700">Hábitos atómicos</div>
+            <div style="font-size:8px;color:var(--muted)">J. Clear</div>
+          </div>
+          <div class="shelf-book-title">Hábitos atómicos</div>
+          <div class="shelf-book-author">Leído</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 2: DASHBOARD EN ESTADO DESPEJADO (SIN LECTURA ACTIVA)    -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-idle">
+      <div class="dash-hdr">
+        <div>
+          <div class="dash-kicker">Buenas tardes, Eduardo</div>
+          <div class="dash-title">Mi Espacio de Lectura</div>
+        </div>
+        <div class="hdr-icons">
+          <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg></div>
+          <div class="icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg></div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Despejada / Invitacion a Elegir -->
+      <div class="idle-card">
+        <div class="idle-icon-wrap">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <div class="idle-title serif">Tu mesita de noche está lista</div>
+        <div class="idle-desc">
+          No tienes ninguna lectura en curso en este momento. Puedes dejarte sorprender por el selector o buscar en tu estantería.
+        </div>
+        <div class="idle-btn-row">
+          <button class="btn-cta">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            Elegir con ¿Qué leo hoy?
+          </button>
+        </div>
+      </div>
+
+      <!-- Atajos Rapidos Activos -->
+      <div class="section-label">Acciones Rápidas</div>
+      <div class="shortcuts-grid">
+        <div class="shortcut-card">
+          <div class="shortcut-icon-box gold">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 7h.01"/><path d="M17 7h.01"/><path d="M7 17h.01"/><path d="M17 17h.01"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">Escanear Libro</div>
+            <div class="shortcut-desc">Registrar con ISBN</div>
+          </div>
+        </div>
+
+        <div class="shortcut-card">
+          <div class="shortcut-icon-box green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/></svg>
+          </div>
+          <div class="shortcut-text">
+            <div class="shortcut-name">Libros Por Leer</div>
+            <div class="shortcut-desc">14 ejemplares en lista</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Siguiente en Lista de Espera -->
+      <div class="recent-row">
+        <div class="recent-title">Siguiente en tu Lista de Lectura</div>
+        <div class="recent-link">Ver todos (14) →</div>
+      </div>
+      <div class="shelf-preview hscroll">
+        <div class="shelf-book-card">
+          <div class="shelf-thumb" style="border-top:3px solid var(--acc)">
+            <div style="font-size:9px;font-weight:700">Ficciones</div>
+            <div style="font-size:8px;color:var(--muted)">174 págs · Corto</div>
+          </div>
+          <div class="shelf-book-title">Ficciones</div>
+          <div class="shelf-book-author">J.L. Borges</div>
+        </div>
+
+        <div class="shelf-book-card">
+          <div class="shelf-thumb">
+            <div style="font-size:9px;font-weight:700">Rayuela</div>
+            <div style="font-size:8px;color:var(--muted)">600 págs · Novela</div>
+          </div>
+          <div class="shelf-book-title">Rayuela</div>
+          <div class="shelf-book-author">J. Cortázar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 3: ATRIBUTO MODAL: REGISTRO RAPIDO (SIN CRONOMETRO/AYER) -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-manual">
+      <div class="sheet-overlay">
+        <div class="sheet-card">
+          <div class="sheet-handle"></div>
+          <div class="sheet-title">Registrar Páginas Leídas</div>
+          <div class="sheet-subtitle">Avanza tu progreso sin usar el cronómetro en vivo</div>
+
+          <!-- Selector de Libro -->
+          <div class="sheet-input-group">
+            <label class="sheet-label">Libro</label>
+            <div style="background:var(--surf);padding:10px 12px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:space-between">
+              <div>
+                <div style="font-size:13px;font-weight:700">Cien años de soledad</div>
+                <div style="font-size:11px;color:var(--muted)">Actualmente en pág. 184 de 471</div>
+              </div>
+              <span style="font-size:11px;font-weight:700;color:var(--pri)">Cambiar</span>
+            </div>
+          </div>
+
+          <!-- Selector de Fecha: Hoy o Ayer -->
+          <div class="sheet-input-group">
+            <label class="sheet-label">¿Cuándo leíste?</label>
+            <div class="sheet-picker-row">
+              <div class="pill-choice active">Hoy (7 de nov)</div>
+              <div class="pill-choice">Ayer (6 de nov)</div>
+            </div>
+          </div>
+
+          <!-- Selector de Pagina Alcanzada -->
+          <div class="sheet-input-group">
+            <label class="sheet-label">Página alcanzada</label>
+            <div class="page-stepper">
+              <div class="step-btn">-5</div>
+              <div class="step-btn">-1</div>
+              <div class="step-val mono">Pág. 215 <span style="font-size:11px;color:var(--acc)">(+31 págs)</span></div>
+              <div class="step-btn">+1</div>
+              <div class="step-btn">+5</div>
+            </div>
+          </div>
+
+          <!-- Boton de Guardado -->
+          <button class="btn-cta" style="width:100%;padding:12px;margin-top:6px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Guardar en mi biblioteca
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- PANTALLA 4: ARQUITECTURA DE NAVEGACION REORDENADA                 -->
+    <!-- ================================================================= -->
+    <div class="scr" id="s-nav">
+      <div class="dash-hdr">
+        <div>
+          <div class="dash-kicker">Arquitectura de Experiencia</div>
+          <div class="dash-title">Nueva Navegación</div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px">
+        <div style="font-size:14px;font-weight:700;margin-bottom:6px">¿Cómo conviven el Dashboard y Mi Librero?</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:12px">
+          El <strong>Dashboard (Inicio)</strong> es el punto de contacto diario para accionar lecturas en 1 segundo. <strong>Mi Librero</strong> se mantiene intacto como la segunda pestaña dedicada para gestionar la colección entera, sagas, repisas físicas y lista de deseos.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surf);border-radius:10px">
+            <strong style="font-size:13px;width:95px">1. Inicio</strong>
+            <span style="font-size:12px;color:var(--muted)">Continuar lectura en 1 toque, atajos rápidos, racha y mesita de noche.</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surf);border-radius:10px">
+            <strong style="font-size:13px;width:95px">2. Mi Librero</strong>
+            <span style="font-size:12px;color:var(--muted)">Cuadrícula de portadas, sagas, libreros físicos y lista de deseos.</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surf);border-radius:10px;border:1px solid var(--pri)">
+            <strong style="font-size:13px;width:95px;color:var(--pri)">3. Escanear</strong>
+            <span style="font-size:12px;color:var(--fg);font-weight:600">Botón central destacado para cámara EAN-13 individual o ráfaga.</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surf);border-radius:10px">
+            <strong style="font-size:13px;width:95px">4. Buscar</strong>
+            <span style="font-size:12px;color:var(--muted)">Búsqueda sin conexión y detective literario con inteligencia artificial.</span>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surf);border-radius:10px">
+            <strong style="font-size:13px;width:95px">5. Metas/Stats</strong>
+            <span style="font-size:12px;color:var(--muted)">Ritmo de lectura, predicciones matemáticas y resumen de lecturas.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Barra de Navegacion Inferior Unificada (5 Tabs con Escanear al Centro) -->
+    <div class="nav-bar">
+      <div class="nav-tab active">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        </div>
+        <span>Inicio</span>
+      </div>
+
+      <div class="nav-tab">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        </div>
+        <span>Mi Librero</span>
+      </div>
+
+      <!-- Boton Central Destacado: Escanear -->
+      <div class="nav-scan-wrapper">
+        <div class="nav-scan-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>
+        </div>
+        <span class="nav-scan-label">Escanear</span>
+      </div>
+
+      <div class="nav-tab">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <span>Buscar</span>
+      </div>
+
+      <div class="nav-tab">
+        <div class="nav-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <span>Metas y Stats</span>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
