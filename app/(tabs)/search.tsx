@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -16,46 +16,48 @@ import { BooksRepository } from '@/db/repositories/booksRepository';
 import { Book } from '@/db/schema/books';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
+import { SearchListSkeleton } from '@/shared/components/Skeleton';
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue';
 
 export default function SearchScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebouncedValue(query, 280);
   const [results, setResults] = useState<Book[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    const trimmed = query.trim();
+    const trimmed = debouncedQuery.trim();
     if (!trimmed) {
       setResults([]);
       setIsSearching(false);
       return;
     }
 
+    let isCancelled = false;
     setIsSearching(true);
-    debounceTimerRef.current = setTimeout(async () => {
+
+    (async () => {
       try {
         const matches = await BooksRepository.search(trimmed);
-        setResults(matches);
+        if (!isCancelled) {
+          setResults(matches);
+        }
       } catch (err) {
         console.error('Error buscando libros:', err);
       } finally {
-        setIsSearching(false);
+        if (!isCancelled) {
+          setIsSearching(false);
+        }
       }
-    }, 250);
+    })();
 
     return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
+      isCancelled = true;
     };
-  }, [query]);
+  }, [debouncedQuery]);
 
   const clearQuery = () => {
     setQuery('');
@@ -147,8 +149,10 @@ export default function SearchScreen() {
         </View>
       ) : null}
 
-      {/* Resultados o Estados Vacíos */}
-      {query.trim().length === 0 ? (
+      {/* Resultados, Skeleton de Carga o Estados Vacíos */}
+      {isSearching && results.length === 0 ? (
+        <SearchListSkeleton count={5} />
+      ) : query.trim().length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Search size={36} color={colors.light.primary} strokeWidth={1.5} />
