@@ -36,9 +36,15 @@ import {
   FurnitureShelvesGroup,
 } from '@/db/repositories/shelvesRepository';
 import { ReadingLogsRepository } from '@/db/repositories/readingLogsRepository';
+import {
+  BookLoansRepository,
+  shouldCountInOwnedPhysicalInventory,
+} from '@/db/repositories/bookLoansRepository';
 import { Book } from '@/db/schema/books';
 import { Shelf } from '@/db/schema/shelves';
 import { ReadingLog } from '@/db/schema/readingLogs';
+import { BookLoan } from '@/db/schema/bookLoans';
+import { LoanCoverRibbon } from '@/features/loans/components/LoanCoverRibbon';
 import {
   evaluateTbrCandidates,
   detectSagaGaps,
@@ -88,6 +94,7 @@ export default function LibraryScreen() {
   const [shelvesList, setShelvesList] = useState<Shelf[]>([]);
   const [completedLogs, setCompletedLogs] = useState<ReadingLog[]>([]);
   const [totalCompletedCount, setTotalCompletedCount] = useState<number>(0);
+  const [activeLoansMap, setActiveLoansMap] = useState<Record<string, BookLoan>>({});
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -107,15 +114,23 @@ export default function LibraryScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const [all, series, groupedShelves, allShelves, completedCount, finishedLogs] =
-        await Promise.all([
-          BooksRepository.getAll(),
-          BooksRepository.getSeriesGrouped(),
-          ShelvesRepository.getGroupedWithBookCounts(),
-          ShelvesRepository.getAll(),
-          ReadingLogsRepository.getTotalCompletedBooksCount(),
-          db.select().from(readingLogs).where(isNotNull(readingLogs.finishedAt)),
-        ]);
+      const [
+        all,
+        series,
+        groupedShelves,
+        allShelves,
+        completedCount,
+        finishedLogs,
+        loansMap,
+      ] = await Promise.all([
+        BooksRepository.getAll(),
+        BooksRepository.getSeriesGrouped(),
+        ShelvesRepository.getGroupedWithBookCounts(),
+        ShelvesRepository.getAll(),
+        ReadingLogsRepository.getTotalCompletedBooksCount(),
+        db.select().from(readingLogs).where(isNotNull(readingLogs.finishedAt)),
+        BookLoansRepository.getActiveLoansByBookMap(),
+      ]);
 
       setAllBooksList(all);
       setSeriesList(series);
@@ -123,6 +138,7 @@ export default function LibraryScreen() {
       setShelvesList(allShelves);
       setTotalCompletedCount(completedCount);
       setCompletedLogs(finishedLogs);
+      setActiveLoansMap(loansMap);
     } catch (err) {
       console.error('Error cargando biblioteca:', err);
     } finally {
@@ -210,9 +226,11 @@ export default function LibraryScreen() {
     return ownedBooks;
   }, [ownedBooks, activeFilter]);
 
-  // Libros físicos propios sin estantería asignada
+  // Libros físicos propios sin estantería asignada (excluye libros prestados por terceros)
   const unassignedPhysicalBooks = useMemo(() => {
-    return ownedBooks.filter((b) => b.modality === 'PHYSICAL' && !b.shelfId);
+    return ownedBooks.filter(
+      (b) => shouldCountInOwnedPhysicalInventory(b) && !b.shelfId
+    );
   }, [ownedBooks]);
 
   const totalSagasCount = seriesList.length;
@@ -837,6 +855,11 @@ export default function LibraryScreen() {
                         </Text>
                       </View>
                     )}
+
+                    {/* Cintillo de préstamo activo (LENT_OUT / BORROWED_IN) */}
+                    {activeLoansMap[book.id] ? (
+                      <LoanCoverRibbon loan={activeLoansMap[book.id]} />
+                    ) : null}
 
                     {/* Badge de Modalidad (Físico / Digital) */}
                     <View style={styles.modalityBadge}>

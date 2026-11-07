@@ -237,6 +237,44 @@ export const StatsDashboardSkeleton: React.FC = () => {
   );
 };
 
+/**
+ * Skeleton para las tarjetas de candidatos del Detective Literario IA.
+ * Respeta la geometria exacta: portada 2:3 (68x102), insignia de coincidencia, titulo/autor y bloque de explicacion sin spoilers.
+ */
+export const AiDetectiveSkeleton: React.FC<{ count?: number }> = ({ count = 3 }) => {
+  const items = Array.from({ length: count }, (_, idx) => idx);
+
+  return (
+    <View style={styles.aiDetectiveContainer} testID="ai-detective-skeleton">
+      {items.map((item) => (
+        <View key={item} style={styles.aiCandidateCardSkeleton}>
+          {/* Miniatura de portada 2:3 de 68x102 */}
+          <SkeletonBox width={68} height={102} borderRadius={8} />
+
+          {/* Columna con insignia, titulo, autor y bloque de explicacion */}
+          <View style={styles.aiCandidateContentCol}>
+            {/* Insignia de coincidencia y status */}
+            <View style={styles.aiHeaderRowSkeleton}>
+              <SkeletonBox width={76} height={20} borderRadius={999} />
+              <SkeletonBox width={64} height={16} borderRadius={4} />
+            </View>
+
+            {/* Titulo y autor */}
+            <SkeletonBox width="88%" height={16} borderRadius={6} style={styles.mt6} />
+            <SkeletonBox width="55%" height={13} borderRadius={5} style={styles.mt6} />
+
+            {/* Bloque de explicacion sin spoilers */}
+            <View style={styles.aiReasonBlockSkeleton}>
+              <SkeletonBox width="100%" height={12} borderRadius={4} />
+              <SkeletonBox width="80%" height={12} borderRadius={4} style={styles.mt4} />
+            </View>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   baseBox: {
     backgroundColor: colors.light.border,
@@ -350,6 +388,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 4,
+  },
+  aiDetectiveContainer: {
+    padding: 16,
+    gap: 14,
+  },
+  aiCandidateCardSkeleton: {
+    flexDirection: 'row',
+    backgroundColor: colors.light.surface,
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  aiCandidateContentCol: {
+    flex: 1,
+  },
+  aiHeaderRowSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  aiReasonBlockSkeleton: {
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: colors.light.surfaceAlt,
+    borderRadius: 8,
+  },
+  mt4: {
+    marginTop: 4,
   },
 });
 
