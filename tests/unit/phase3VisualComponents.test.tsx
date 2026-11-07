@@ -129,7 +129,7 @@ describe('Fase 3 Componentes Visuales', () => {
       );
 
       expect(getByTestId('reading-timer-modal')).toBeTruthy();
-      expect(getByText('Timestamp activo · Pantalla apagada segura')).toBeTruthy();
+      expect(getByText('Cronómetro activo · Sigue contando con pantalla apagada')).toBeTruthy();
 
       // Pausar reloj
       const pauseBtn = getByText('Pausar reloj');
