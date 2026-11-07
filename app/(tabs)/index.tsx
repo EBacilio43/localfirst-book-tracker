@@ -27,6 +27,7 @@ import {
   ShieldAlert,
   Check,
   Tag,
+  Cloud,
 } from 'lucide-react-native';
 import { db } from '@/db/client';
 import { readingLogs } from '@/db/schema/readingLogs';
@@ -55,6 +56,8 @@ import {
   ShelvesManagerModal,
   DigitalCollectionKey,
 } from '@/features/shelves/components/ShelvesManagerModal';
+import { CloudSyncAndSettingsModal } from '@/features/cloud-sync/components/CloudSyncAndSettingsModal';
+import { wipeAllUserDataPermanently } from '@/features/cloud-sync/services/privacyDataWipeService';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
 import { LibraryGridSkeleton } from '@/shared/components/Skeleton';
@@ -111,6 +114,7 @@ export default function LibraryScreen() {
   const [isShelvesModalVisible, setIsShelvesModalVisible] = useState(false);
   const [selectedBookForShelves, setSelectedBookForShelves] =
     useState<Book | null>(null);
+  const [isCloudModalVisible, setIsCloudModalVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -234,6 +238,12 @@ export default function LibraryScreen() {
   }, [ownedBooks]);
 
   const totalSagasCount = seriesList.length;
+  const pendingOfflineCount = useMemo(
+    () =>
+      allBooksList.filter((b) => b.metadataStatus === 'PENDING_OFFLINE_SYNC')
+        .length,
+    [allBooksList]
+  );
 
   // Libro de referencia para abrir ShelvesManagerModal
   const shelfModalReferenceBook = selectedBookForShelves || ownedBooks[0] || null;
@@ -261,9 +271,17 @@ export default function LibraryScreen() {
           <SafeButton
             size="sm"
             variant="outline"
+            onPress={() => setIsCloudModalVisible(true)}
+            leftIcon={<Cloud size={15} color={colors.light.primary} />}
+            title="Respaldo"
+          />
+
+          <SafeButton
+            size="sm"
+            variant="outline"
             onPress={() => setIsTbrModalVisible(true)}
             leftIcon={<Compass size={16} color={colors.light.primary} />}
-            title="Ruleta TBR"
+            title="¿Qué leo hoy?"
           />
 
           <SafeButton
@@ -943,6 +961,23 @@ export default function LibraryScreen() {
           }}
         />
       ) : null}
+
+      {/* Modal de Respaldo en la Nube, Libros Pendientes, Importar y Privacidad */}
+      <CloudSyncAndSettingsModal
+        visible={isCloudModalVisible}
+        onClose={() => setIsCloudModalVisible(false)}
+        backupSummary={{
+          booksCount: ownedBooks.length,
+          sessionsCount: completedLogs.length,
+          quotesCount: 0,
+        }}
+        pendingOfflineBooksCount={pendingOfflineCount}
+        onWipeAllData={async () => {
+          await wipeAllUserDataPermanently();
+          setIsCloudModalVisible(false);
+          await loadData();
+        }}
+      />
     </View>
   );
 }

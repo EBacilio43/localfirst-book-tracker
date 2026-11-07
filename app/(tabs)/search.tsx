@@ -293,16 +293,16 @@ export default function SearchScreen() {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View>
-            <Text style={styles.kicker}>Búsqueda Inteligente Híbrida</Text>
+            <Text style={styles.kicker}>Explorador de Lecturas</Text>
             <Text style={styles.screenTitle}>
               {mode === 'LOCAL_FTS'
-                ? 'En Mi Biblioteca (FTS5)'
-                : 'Detective Literario IA'}
+                ? 'En Mi Biblioteca'
+                : 'Detective Literario'}
             </Text>
           </View>
           <View style={styles.techPill}>
             <Text style={styles.techPillText}>
-              {mode === 'LOCAL_FTS' ? 'Sin tildes · 280ms' : 'Gemini 2.5 · Zod'}
+              {mode === 'LOCAL_FTS' ? 'Libros, citas y notas' : 'Por recuerdos'}
             </Text>
           </View>
         </View>
@@ -330,7 +330,7 @@ export default function SearchScreen() {
                 mode === 'LOCAL_FTS' && styles.modeButtonTextActive,
               ]}
             >
-              Biblioteca FTS5
+              Mi Biblioteca
             </Text>
           </Pressable>
 
@@ -356,7 +356,7 @@ export default function SearchScreen() {
                 mode === 'AI_DETECTIVE' && styles.modeButtonTextActive,
               ]}
             >
-              Detective IA
+              Detective Literario
             </Text>
           </Pressable>
         </View>
@@ -372,7 +372,7 @@ export default function SearchScreen() {
                 testID="fts-search-input"
                 value={localQuery}
                 onChangeText={setLocalQuery}
-                placeholder="Título, autor, cita OCR, personaje o nota (sin tildes)..."
+                placeholder="Título, autor, frase subrayada, personaje o nota..."
                 placeholderTextColor={colors.light.textSubtle}
                 style={styles.input}
                 returnKeyType="search"
@@ -408,7 +408,7 @@ export default function SearchScreen() {
                   },
                   {
                     key: 'QUOTES',
-                    label: `Citas OCR (${deepResult?.counts.quotes ?? 0})`,
+                    label: `Citas (${deepResult?.counts.quotes ?? 0})`,
                   },
                   {
                     key: 'CHARACTERS',
@@ -453,12 +453,12 @@ export default function SearchScreen() {
                 />
               </View>
               <Text style={styles.emptyTitle}>
-                Búsqueda Profunda Offline (SQLite FTS5)
+                Busca en toda tu biblioteca
               </Text>
               <Text style={styles.emptySubtitle}>
-                Busca instantáneamente y sin preocuparte por tildes en títulos,
-                autores, sinopsis, citas subrayadas por OCR, glosario de
-                personajes y notas anti-olvido.
+                Encuentra al instante cualquier libro, autor, frase que hayas
+                guardado, personaje o nota personal sin importar si escribes con
+                o sin acentos.
               </Text>
             </ScrollView>
           ) : deepResult && deepResult.counts.total === 0 ? (
@@ -593,7 +593,7 @@ export default function SearchScreen() {
                       <View style={styles.typePillAccent}>
                         <Quote size={12} color="#FFFFFF" />
                         <Text style={styles.typePillText}>
-                          CITA OCR
+                          CITA GUARDADA
                           {qItem.pageNumber ? ` · Pág. ${qItem.pageNumber}` : ''}
                         </Text>
                       </View>
@@ -907,8 +907,9 @@ export default function SearchScreen() {
               ))}
 
               <Text style={styles.aiDisclaimer}>
-                Las sugerencias de Gemini 2.5 Flash son orientativas y se
-                validan con Zod frente a tu biblioteca local y el catálogo.
+                Las sugerencias del Detective Literario son orientativas y se
+                confirman con los datos de tu biblioteca y el catálogo de
+                ediciones.
               </Text>
             </>
           ) : (

@@ -352,11 +352,11 @@ label{cursor:pointer;user-select:none}
 
     <!-- Sub-controles contextuales según pantalla -->
     <div class="subpanel sp-timer">
-      <div class="subpanel-title"><span>Estado del Cronómetro:</span><span>Persistente por Timestamps</span></div>
+      <div class="subpanel-title"><span>Estado del Cronómetro:</span><span>Tiempo exacto</span></div>
       <div class="tg-grid three">
         <label for="tm-active" class="tg">En sesión</label>
         <label for="tm-finish" class="tg">Guardar avance</label>
-        <label for="tm-outlier" class="tg">Outlier Guard</label>
+        <label for="tm-outlier" class="tg">Sesión atípica</label>
       </div>
     </div>
 
@@ -373,7 +373,7 @@ label{cursor:pointer;user-select:none}
       <div class="tg-grid three">
         <label for="fc-book" class="tg">ETA por Libro</label>
         <label for="fc-catchup" class="tg">Catch-up / Mes</label>
-        <label for="fc-cold" class="tg">Cold Start (0)</label>
+        <label for="fc-cold" class="tg">Ritmo inicial (0)</label>
       </div>
     </div>
 
@@ -395,11 +395,11 @@ label{cursor:pointer;user-select:none}
          ===================================================================== -->
     <div id="s-timer" class="scr">
       <div>
-        <div class="sbar"><span>22:38</span><span>local_date: 2026-11-06 (UTC-6)</span></div>
+        <div class="sbar"><span>22:38</span><span>Viernes 6 de noviembre</span></div>
         <div class="hdr">
           <div>
             <h1 class="h1 serif">Cronómetro Lector</h1>
-            <p class="muted">Inmune al bloqueo de pantalla (started_at_epoch_ms)</p>
+            <p class="muted">Sigue contando con la pantalla apagada</p>
           </div>
           <span class="pill">28.4 págs/h media</span>
         </div>
@@ -408,7 +408,7 @@ label{cursor:pointer;user-select:none}
           <div class="seg seg-tm">
             <label for="tm-active">En curso</label>
             <label for="tm-finish">Guardar sesión</label>
-            <label for="tm-outlier">Outlier Guard</label>
+            <label for="tm-outlier">Sesión atípica</label>
           </div>
         </div>
       </div>
@@ -474,7 +474,7 @@ label{cursor:pointer;user-select:none}
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
               <b style="font-size:15px">Cerrar sesión de lectura</b>
-              <div class="muted">Duración medida por timestamps: <b id="fin-dur-lbl">42 min (0.70 h)</b></div>
+              <div class="muted">Tiempo medido: <b id="fin-dur-lbl">42 min (0.70 h)</b></div>
             </div>
             <span class="pill" id="fin-speed-pill">34.1 págs/h</span>
           </div>
@@ -510,8 +510,8 @@ label{cursor:pointer;user-select:none}
           <!-- Fecha local (Hoy vs Ayer) -->
           <div class="retro-row">
             <div>
-              <b style="font-size:12px;display:block">Fecha local (local_date)</b>
-              <span class="muted">Si leíste antes de dormir anoche, elige Ayer</span>
+              <b style="font-size:12px;display:block">Fecha de lectura</b>
+              <span class="muted">Si leíste anoche antes de dormir, elige Ayer</span>
             </div>
             <div class="retro-pills">
               <label for="dt-today" class="retro-pill">Hoy (06 Nov)</label>
@@ -524,7 +524,7 @@ label{cursor:pointer;user-select:none}
           <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
           Guardar sesión y actualizar predicciones
         </label>
-        <label for="tm-outlier" class="btn2">Simular olvido de pausa (Probar Outlier Guard)</label>
+        <label for="tm-outlier" class="btn2">Simular olvido de pausa (Ajustar tiempo)</label>
       </div>
 
       <!-- SUB-VISTA C: DETECTOR DE SESIONES ATÍPICAS (OUTLIER GUARD VISUAL Y COMPACTO) -->

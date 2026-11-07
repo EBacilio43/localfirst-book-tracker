@@ -275,6 +275,77 @@ export const AiDetectiveSkeleton: React.FC<{ count?: number }> = ({ count = 3 })
   );
 };
 
+/**
+ * Skeleton para la pantalla o modal de Respaldo en la Nube y Ajustes de BaciBooks.
+ * Representa la barra de pestañas (Respaldo, Pendientes, Importar, Privacidad) y tarjetas de estado.
+ */
+export const CloudSyncSkeleton: React.FC = () => {
+  return (
+    <View style={styles.cloudSyncContainer} testID="cloud-sync-skeleton">
+      {/* Cabecera con título e icono */}
+      <View style={styles.rowBetween}>
+        <View style={styles.statsHeaderCol}>
+          <SkeletonBox width={180} height={22} borderRadius={6} />
+          <SkeletonBox width={240} height={14} borderRadius={5} style={styles.mt6} />
+        </View>
+        <SkeletonBox width={36} height={36} borderRadius={18} />
+      </View>
+
+      {/* Pestañas (4 segmentos: Respaldo, Pendientes, Importar, Privacidad) */}
+      <View style={styles.cloudTabsRowSkeleton}>
+        <SkeletonBox width="23%" height={36} borderRadius={10} />
+        <SkeletonBox width="23%" height={36} borderRadius={10} />
+        <SkeletonBox width="23%" height={36} borderRadius={10} />
+        <SkeletonBox width="23%" height={36} borderRadius={10} />
+      </View>
+
+      {/* Tarjeta principal de estado de cuenta y copia */}
+      <View style={styles.cardSkeleton}>
+        <View style={styles.rowBetween}>
+          <View style={styles.cloudAccountRowSkeleton}>
+            <SkeletonBox width={38} height={38} borderRadius={12} />
+            <View style={styles.searchInfoCol}>
+              <SkeletonBox width={140} height={16} borderRadius={5} />
+              <SkeletonBox width={190} height={12} borderRadius={4} style={styles.mt4} />
+            </View>
+          </View>
+          <SkeletonBox width={70} height={24} borderRadius={999} />
+        </View>
+
+        {/* Resumen de libros, sesiones y citas */}
+        <View style={styles.kpiGridSkeleton}>
+          <View style={styles.kpiItemSkeleton}>
+            <SkeletonBox width={60} height={12} borderRadius={4} />
+            <SkeletonBox width={45} height={18} borderRadius={5} style={styles.mt6} />
+          </View>
+          <View style={styles.kpiItemSkeleton}>
+            <SkeletonBox width={60} height={12} borderRadius={4} />
+            <SkeletonBox width={45} height={18} borderRadius={5} style={styles.mt6} />
+          </View>
+          <View style={styles.kpiItemSkeleton}>
+            <SkeletonBox width={60} height={12} borderRadius={4} />
+            <SkeletonBox width={45} height={18} borderRadius={5} style={styles.mt6} />
+          </View>
+        </View>
+
+        {/* Botones de acción */}
+        <SkeletonBox width="100%" height={46} borderRadius={12} style={styles.mt16} />
+        <SkeletonBox width="100%" height={46} borderRadius={12} style={styles.mt8} />
+      </View>
+
+      {/* Tarjeta secundaria de nota de privacidad */}
+      <View style={styles.cardSkeleton}>
+        <View style={styles.rowBetween}>
+          <SkeletonBox width={150} height={16} borderRadius={5} />
+          <SkeletonBox width={24} height={24} borderRadius={12} />
+        </View>
+        <SkeletonBox width="100%" height={12} borderRadius={4} style={styles.mt8} />
+        <SkeletonBox width="85%" height={12} borderRadius={4} style={styles.mt4} />
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   baseBox: {
     backgroundColor: colors.light.border,
@@ -416,6 +487,22 @@ const styles = StyleSheet.create({
     padding: 8,
     backgroundColor: colors.light.surfaceAlt,
     borderRadius: 8,
+  },
+  cloudSyncContainer: {
+    padding: 16,
+    gap: 14,
+  },
+  cloudTabsRowSkeleton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    gap: 8,
+  },
+  cloudAccountRowSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
   },
   mt4: {
     marginTop: 4,

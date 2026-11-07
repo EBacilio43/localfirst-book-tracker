@@ -162,7 +162,7 @@ export function TbrRouletteModal({
             <View style={styles.headerTitles}>
               <View style={styles.headerBadge}>
                 <Compass size={14} color={colors.light.primary} />
-                <Text style={styles.headerBadgeText}>Ruleta TBR</Text>
+                <Text style={styles.headerBadgeText}>¿Qué leo hoy?</Text>
               </View>
               <Text style={styles.titleText}>¿Qué leo hoy?</Text>
             </View>
