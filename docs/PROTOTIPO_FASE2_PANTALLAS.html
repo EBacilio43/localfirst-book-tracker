@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fase 2 (v0.2.0) — Prototipo Interactivo de Estados, Estanterías, Wishlist y Ruleta TBR</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+input.st{display:none}
+label{cursor:pointer;user-select:none}
+.wrap{max-width:410px;margin:0 auto}
+.hscroll{scrollbar-width:none;overflow-x:auto}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Iconos Lucide (SVG Vectoriales, Cero Emojis) ---------- */
+.lucide{display:inline-block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;vertical-align:-2px;flex-shrink:0}
+.lucide-tab{width:20px;height:20px;margin-bottom:2px}
+.lucide-lg{width:22px;height:22px}
+.lucide-sm{width:13px;height:13px;vertical-align:-1px}
+
+/* ---------- Controles Superiores del Prototipo ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.three{grid-template-columns:repeat(3,1fr)}
+.tg-grid.four{grid-template-columns:repeat(4,1fr)}
+.tg-grid.five{grid-template-columns:repeat(5,1fr)}
+.tg{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:12px;font-weight:600;padding:8px 4px;border-radius:9px;color:#A8A29E;transition:all .15s ease}
+.subpanel{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #2E2A27}
+.subpanel-title{font-size:12px;color:#A8A29E;margin-bottom:4px;display:flex;justify-content:space-between}
+
+/* Activación de pestañas del panel de control */
+#scr-status:checked ~ .wrap .chrome label[for="scr-status"],
+#scr-shelves:checked ~ .wrap .chrome label[for="scr-shelves"],
+#scr-wish:checked ~ .wrap .chrome label[for="scr-wish"],
+#scr-wheel:checked ~ .wrap .chrome label[for="scr-wheel"]{background:#B85F30;color:#fff}
+
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+
+#scr-status:checked ~ .wrap .sp-status,
+#scr-shelves:checked ~ .wrap .sp-shelves,
+#scr-wish:checked ~ .wrap .sp-wish,
+#scr-wheel:checked ~ .wrap .sp-wheel{display:block}
+
+#st-tbr:checked ~ .wrap .chrome label[for="st-tbr"],
+#st-reading:checked ~ .wrap .chrome label[for="st-reading"],
+#st-paused:checked ~ .wrap .chrome label[for="st-paused"],
+#st-read:checked ~ .wrap .chrome label[for="st-read"],
+#st-dnf:checked ~ .wrap .chrome label[for="st-dnf"],
+#sh-phys:checked ~ .wrap .chrome label[for="sh-phys"],
+#sh-dig:checked ~ .wrap .chrome label[for="sh-dig"],
+#sh-move:checked ~ .wrap .chrome label[for="sh-move"],
+#ws-all:checked ~ .wrap .chrome label[for="ws-all"],
+#ws-saga:checked ~ .wrap .chrome label[for="ws-saga"],
+#ws-buy:checked ~ .wrap .chrome label[for="ws-buy"],
+#wh-ready:checked ~ .wrap .chrome label[for="wh-ready"],
+#wh-win:checked ~ .wrap .chrome label[for="wh-win"],
+#wh-guard:checked ~ .wrap .chrome label[for="wh-guard"]{background:#3A3530;color:#F3EFE7}
+
+/* ---------- Marco del Teléfono y Tokens de Tema ---------- */
+.phone{
+  --bg:#FAF7F2;
+  --fg:#1C1917;
+  --muted:#6B6560;
+  --surf:#EFEAE1;
+  --card:#FFFDF8;
+  --line:#D8CFC0;
+  --pri:#1E4635;
+  --pri-fg:#FAF7F2;
+  --acc:#B85F30;
+  --gold:#C98A2C;
+  --danger:#C83E32;
+  border-radius:36px;
+  border:5px solid #2E2A27;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.5)
+}
+#thm-night:checked ~ .wrap .phone{
+  --bg:#161412;
+  --fg:#F3EFE7;
+  --muted:#A8A29E;
+  --surf:#221F1C;
+  --card:#2C2824;
+  --line:#3F3933;
+  --pri:#2E6A50;
+  --pri-fg:#FAF7F2;
+  --acc:#C96E3C;
+  --gold:#E9A23B;
+  --danger:#E5674D;
+}
+
+.scr{display:none;min-height:740px;flex-direction:column;justify-content:space-between}
+#scr-status:checked ~ .wrap #s-status,
+#scr-shelves:checked ~ .wrap #s-shelves,
+#scr-wish:checked ~ .wrap #s-wish,
+#scr-wheel:checked ~ .wrap #s-wheel{display:flex}
+
+.sbar{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 20px 12px}
+.h1{font-size:24px;font-weight:700;letter-spacing:-.3px;line-height:1.15}
+.muted{color:var(--muted);font-size:12px}
+
+/* ---------- Componentes Comunes ---------- */
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--pri);color:var(--pri-fg);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pill.acc{background:var(--acc);color:#fff}
+.pill.soft{background:var(--surf);color:var(--fg);border:1px solid var(--line)}
+.pill.gold{background:rgba(233,162,59,.2);color:var(--fg);border:1px solid var(--gold)}
+
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surf);border-radius:14px;padding:4px;gap:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg label{min-height:36px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border-radius:16px;background:var(--pri);color:var(--pri-fg);font-size:14px;font-weight:700;border:none}
+.cta.acc{background:var(--acc);color:#fff}
+.btn2{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;border-radius:14px;background:var(--surf);color:var(--fg);font-size:13px;font-weight:600;margin-top:8px;border:1px solid var(--line)}
+
+/* Portadas en miniatura */
+.cv{aspect-ratio:2/3;border-radius:5px 9px 9px 5px;padding:8px 6px;color:#FAF7F2;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.22),inset 3px 0 0 rgba(255,255,255,.1)}
+.cv-sm{width:54px;flex:0 0 54px}
+.cv-md{width:76px;flex:0 0 76px}
+.cv-lg{width:96px;flex:0 0 96px}
+.ct{font-size:12px;font-weight:700;line-height:1.15}
+.ca{font-size:12px;opacity:.82;margin-top:2px}
+.sn{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.55);font-size:12px;font-weight:700;padding:1px 5px;border-radius:5px}
+.eb{position:absolute;top:5px;right:5px;background:rgba(250,247,242,.92);color:#1C1917;font-size:12px;font-weight:700;padding:1px 5px;border-radius:5px}
+.c1{background:linear-gradient(160deg,#9A4B26,#4A200C)}
+.c2{background:linear-gradient(160deg,#85582A,#3E260D)}
+.c3{background:linear-gradient(160deg,#6D4C3D,#2E1E17)}
+.c4{background:linear-gradient(160deg,#2D3A45,#141B21)}
+.c5{background:linear-gradient(160deg,#5A3A3A,#241616)}
+.c6{background:linear-gradient(160deg,#1E4635,#0D2118)}
+.c7{background:linear-gradient(160deg,#4A3B5C,#21192B)}
+.c8{background:linear-gradient(160deg,#234B5E,#0F232E)}
+
+/* ---------- 1. PANTALLA: MODAL DE ESTADOS DE LECTURA ---------- */
+.bk-hero{display:flex;gap:14px;padding:6px 20px 14px;align-items:center}
+.bk-meta{flex:1;min-width:0}
+.bk-title{font-size:18px;font-weight:700;line-height:1.2}
+.bk-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.bk-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+.sheet{background:var(--card);border-top:1px solid var(--line);border-radius:26px 26px 0 0;padding:10px 18px 16px;flex:1;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 -8px 24px rgba(0,0,0,.08)}
+.handle{width:38px;height:4px;border-radius:999px;background:var(--line);margin:0 auto 10px}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;margin:10px 0 6px;color:var(--fg)}
+.lbl span{font-weight:500;color:var(--muted)}
+
+/* Barra de 5 estados */
+.st-bar{display:flex;gap:6px;padding:2px 0 10px}
+.st-chip{min-height:38px;padding:0 12px;border-radius:999px;background:var(--surf);color:var(--muted);font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid var(--line)}
+#st-tbr:checked ~ .wrap .st-bar label[for="st-tbr"],
+#st-reading:checked ~ .wrap .st-bar label[for="st-reading"],
+#st-paused:checked ~ .wrap .st-bar label[for="st-paused"],
+#st-read:checked ~ .wrap .st-bar label[for="st-read"],
+#st-dnf:checked ~ .wrap .st-bar label[for="st-dnf"]{background:var(--pri);color:var(--pri-fg);border-color:var(--pri)}
+
+.st-pane{display:none}
+#st-tbr:checked ~ .wrap .pane-tbr,
+#st-reading:checked ~ .wrap .pane-reading,
+#st-paused:checked ~ .wrap .pane-paused,
+#st-read:checked ~ .wrap .pane-read,
+#st-dnf:checked ~ .wrap .pane-dnf{display:block}
+
+/* Preferencia de avance: Páginas vs Capítulos (Porcentaje siempre automático) */
+#pm-pages:checked ~ .wrap .seg-pm label[for="pm-pages"],
+#pm-chap:checked ~ .wrap .seg-pm label[for="pm-chap"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.pm-box{display:none;background:var(--surf);border-radius:16px;padding:12px;margin-top:8px;border:1px solid var(--line)}
+#pm-pages:checked ~ .wrap .pm-pages,
+#pm-chap:checked ~ .wrap .pm-chap{display:block}
+
+.prog-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.prog-big{font-size:20px;font-weight:800;color:var(--fg)}
+.prog-track{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin:8px 0 12px}
+.prog-fill{height:100%;background:var(--pri);border-radius:999px;width:34.5%}
+
+/* Campo de entrada directa de página o capítulo (sin números sugeridos arbitrarios) */
+.direct-input-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1.5px solid var(--pri);border-radius:12px;padding:8px 12px}
+.direct-input-field{font-size:18px;font-weight:800;color:var(--fg);background:transparent;border:none;width:72px;text-align:center;border-bottom:2px solid var(--acc);padding-bottom:2px}
+
+/* Selector Hoy / Ayer y Relectura */
+.retro-row{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border-radius:12px;padding:8px 12px;margin-top:8px}
+.retro-pills{display:flex;gap:6px}
+.retro-pill{padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--line)}
+#dt-today:checked ~ .wrap label[for="dt-today"],
+#dt-yest:checked ~ .wrap label[for="dt-yest"]{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+.reread-banner{display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(30,70,53,.12);border:1px solid var(--pri);border-radius:12px;padding:8px 12px;margin-top:8px;font-size:12px}
+
+/* Nota anti-olvido y Spoiler Blur */
+.note-card{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:6px}
+.note-text{font-size:13px;line-height:1.45;color:var(--fg);transition:filter .2s ease}
+#sp-blur:checked ~ .wrap .note-blur-target{filter:blur(5px);user-select:none}
+.spoiler-toggle{display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;font-weight:600}
+.sw-pill{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--line);font-size:12px;font-weight:700}
+#sp-blur:checked ~ .wrap label[for="sp-blur"].sw-pill{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+/* Estrellas 100% reactivas al toque directo (mitad izquierda = .5, mitad derecha = .0, sin botones abajo) */
+.stars-box{background:var(--surf);border-radius:16px;padding:14px 12px;text-align:center;border:1px solid var(--line)}
+.touch-stars{display:inline-flex;gap:8px;margin:8px 0 6px;position:relative}
+.star-unit{position:relative;width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center}
+.star-unit svg{width:32px;height:32px;stroke:#E9A23B;stroke-width:1.8;fill:transparent;pointer-events:none}
+.star-hit-l,.star-hit-r{position:absolute;top:0;bottom:0;width:50%;z-index:3;cursor:pointer}
+.star-hit-l{left:0}
+.star-hit-r{right:0}
+.rt-val{font-size:18px;font-weight:800;color:var(--fg);display:block;margin-top:2px}
+
+.log-item{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border-radius:12px;padding:9px 12px;margin-top:6px;font-size:12px;border:1px solid var(--line)}
+
+/* ---------- 2. PANTALLA: ESTANTERÍAS Y UBICACIÓN FÍSICA / DIGITAL ---------- */
+#sh-phys:checked ~ .wrap .seg-sh label[for="sh-phys"],
+#sh-dig:checked ~ .wrap .seg-sh label[for="sh-dig"],
+#sh-move:checked ~ .wrap .seg-sh label[for="sh-move"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.sh-pane{display:none;padding:0 20px;flex:1}
+#sh-phys:checked ~ .wrap .sh-pane-phys,
+#sh-dig:checked ~ .wrap .sh-pane-dig,
+#sh-move:checked ~ .wrap .sh-pane-move{display:block}
+
+.furniture{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.furn-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.furn-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:8px}
+.color-dot{width:12px;height:12px;border-radius:999px;display:inline-block}
+.shelf-row{background:var(--surf);border-radius:12px;padding:10px;margin-top:8px;border-left:4px solid var(--pri)}
+.shelf-row.terra{border-left-color:var(--acc)}
+.shelf-row.navy{border-left-color:#234B5E}
+.shelf-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;margin-bottom:8px}
+.mini-spines{display:flex;gap:8px;align-items:center}
+
+/* ---------- 3. PANTALLA: WISHLIST DE COMPRAS ---------- */
+#ws-all:checked ~ .wrap .seg-ws label[for="ws-all"],
+#ws-saga:checked ~ .wrap .seg-ws label[for="ws-saga"],
+#ws-buy:checked ~ .wrap .seg-ws label[for="ws-buy"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.ws-pane{display:none;padding:0 20px;flex:1}
+#ws-all:checked ~ .wrap .ws-pane-all,
+#ws-saga:checked ~ .wrap .ws-pane-saga,
+#ws-buy:checked ~ .wrap .ws-pane-buy{display:block}
+
+.wish-card{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;align-items:flex-start}
+.wish-info{flex:1;min-width:0}
+.store-tag{display:inline-flex;align-items:center;gap:5px;background:var(--surf);border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:12px;font-weight:700;margin-top:6px;color:var(--fg)}
+.price-tag{color:var(--pri);font-weight:800}
+
+/* ---------- 4. PANTALLA: RULETA INTERACTIVA TBR ---------- */
+.wh-pane{display:none;padding:0 20px;flex:1}
+#wh-ready:checked ~ .wrap .wh-pane-ready,
+#wh-win:checked ~ .wrap .wh-pane-win,
+#wh-guard:checked ~ .wrap .wh-pane-guard{display:block}
+
+.wheel-stage{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:16px;text-align:center;margin-bottom:12px;position:relative}
+.wheel-ring{display:flex;justify-content:center;align-items:center;gap:10px;padding:12px 4px;margin:6px 0}
+.wheel-slot{transition:transform .2s ease;opacity:.85}
+.wheel-slot.active{transform:scale(1.08);opacity:1;outline:3px solid var(--acc);border-radius:6px 10px 10px 6px}
+.guard-banner{display:flex;align-items:flex-start;gap:10px;background:rgba(30,70,53,.12);border:1px solid var(--pri);border-radius:14px;padding:10px 12px;text-align:left;font-size:12px;margin-bottom:12px}
+
+/* Filtros interactivos de la ruleta */
+#wf-all:checked ~ .wrap label[for="wf-all"],
+#wf-phys:checked ~ .wrap label[for="wf-phys"],
+#wf-eb:checked ~ .wrap label[for="wf-eb"],
+#wl-any:checked ~ .wrap label[for="wl-any"],
+#wl-short:checked ~ .wrap label[for="wl-short"],
+#wl-long:checked ~ .wrap label[for="wl-long"]{background:var(--pri);color:var(--pri-fg);border-color:var(--pri)}
+
+/* Barra de navegación inferior */
+.dock{padding:10px 14px 14px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:6px;background:var(--surf);border-radius:20px;padding:6px}
+.tab{min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted);border-radius:14px}
+.tab.on{color:var(--fg);background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+</style>
+</head>
+<body>
+
+<!-- Radios de estado en CSS puro -->
+<input type="radio" name="screen" id="scr-status" class="st" checked />
+<input type="radio" name="screen" id="scr-shelves" class="st" />
+<input type="radio" name="screen" id="scr-wish" class="st" />
+<input type="radio" name="screen" id="scr-wheel" class="st" />
+
+<input type="radio" name="theme" id="thm-day" class="st" checked />
+<input type="radio" name="theme" id="thm-night" class="st" />
+
+<!-- Sub-estados de Modal de Estado de Lectura -->
+<input type="radio" name="bstatus" id="st-tbr" class="st" />
+<input type="radio" name="bstatus" id="st-reading" class="st" checked />
+<input type="radio" name="bstatus" id="st-paused" class="st" />
+<input type="radio" name="bstatus" id="st-read" class="st" />
+<input type="radio" name="bstatus" id="st-dnf" class="st" />
+
+<!-- Preferencia inicial del usuario: Páginas vs Capítulos (Porcentaje siempre automático) -->
+<input type="radio" name="pmode" id="pm-pages" class="st" checked />
+<input type="radio" name="pmode" id="pm-chap" class="st" />
+
+<!-- Fecha de avance (Hoy vs Ayer) -->
+<input type="radio" name="rdate" id="dt-today" class="st" checked />
+<input type="radio" name="rdate" id="dt-yest" class="st" />
+
+<!-- Spoiler Blur en Nota de Pausa -->
+<input type="checkbox" id="sp-blur" class="st" />
+
+<!-- Sub-estados de Estanterías -->
+<input type="radio" name="shview" id="sh-phys" class="st" checked />
+<input type="radio" name="shview" id="sh-dig" class="st" />
+<input type="radio" name="shview" id="sh-move" class="st" />
+
+<!-- Sub-estados de Wishlist -->
+<input type="radio" name="wsview" id="ws-all" class="st" checked />
+<input type="radio" name="wsview" id="ws-saga" class="st" />
+<input type="radio" name="wsview" id="ws-buy" class="st" />
+
+<!-- Sub-estados de Ruleta TBR -->
+<input type="radio" name="whview" id="wh-ready" class="st" checked />
+<input type="radio" name="whview" id="wh-win" class="st" />
+<input type="radio" name="whview" id="wh-guard" class="st" />
+
+<!-- Filtros de Ruleta -->
+<input type="radio" name="wmod" id="wf-all" class="st" checked />
+<input type="radio" name="wmod" id="wf-phys" class="st" />
+<input type="radio" name="wmod" id="wf-eb" class="st" />
+<input type="radio" name="wlen" id="wl-any" class="st" checked />
+<input type="radio" name="wlen" id="wl-short" class="st" />
+<input type="radio" name="wlen" id="wl-long" class="st" />
+
+<div class="wrap">
+
+  <!-- ===================== PANEL DE CONTROL DEL PROTOTIPO ===================== -->
+  <div class="chrome">
+    <div class="chrome-top">
+      <span class="tag">Fase 2 (v0.2.0) · Prototipo UI v2</span>
+      <span>Validado por el usuario</span>
+    </div>
+
+    <!-- Selector de los 4 módulos de la Fase 2 -->
+    <div class="tg-grid four">
+      <label for="scr-status" class="tg">1. Estados</label>
+      <label for="scr-shelves" class="tg">2. Estantes</label>
+      <label for="scr-wish" class="tg">3. Wishlist</label>
+      <label for="scr-wheel" class="tg">4. Ruleta</label>
+    </div>
+
+    <!-- Selector de tema Día / Noche -->
+    <div class="tg-grid">
+      <label for="thm-day" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        Modo Día
+      </label>
+      <label for="thm-night" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        Modo Noche
+      </label>
+    </div>
+
+    <!-- Sub-controles contextuales según pantalla -->
+    <div class="subpanel sp-status">
+      <div class="subpanel-title"><span>Estado de lectura activo:</span><span>5 estados</span></div>
+      <div class="tg-grid five">
+        <label for="st-tbr" class="tg">Por leer</label>
+        <label for="st-reading" class="tg">Leyendo</label>
+        <label for="st-paused" class="tg">En pausa</label>
+        <label for="st-read" class="tg">Leído</label>
+        <label for="st-dnf" class="tg">DNF</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-shelves">
+      <div class="subpanel-title"><span>Vista de ubicación:</span><span>Físico / Digital</span></div>
+      <div class="tg-grid three">
+        <label for="sh-phys" class="tg">Libreros físicos</label>
+        <label for="sh-dig" class="tg">Colecciones eBook</label>
+        <label for="sh-move" class="tg">Mover / Ediciones</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-wish">
+      <div class="subpanel-title"><span>Vista de Wishlist:</span><span>Compras y Sagas</span></div>
+      <div class="tg-grid three">
+        <label for="ws-all" class="tg">Deseados (4)</label>
+        <label for="ws-saga" class="tg">Huecos de saga</label>
+        <label for="ws-buy" class="tg">Ya lo compré</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-wheel">
+      <div class="subpanel-title"><span>Estado de la Ruleta TBR:</span><span>Saga Guard activo</span></div>
+      <div class="tg-grid three">
+        <label for="wh-ready" class="tg">Configurar giro</label>
+        <label for="wh-win" class="tg">Libro ganador</label>
+        <label for="wh-guard" class="tg">Regla de sagas</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MARCO DEL TELÉFONO ===================== -->
+  <div class="phone">
+
+    <!-- =====================================================================
+         1. MODAL / HOJA DE ESTADOS DE LECTURA Y PROGRESO
+         ===================================================================== -->
+    <div id="s-status" class="scr">
+      <div>
+        <div class="sbar"><span>9:41</span><span>Local-First · 100%</span></div>
+
+        <!-- Cabecera compacta del libro seleccionado -->
+        <div class="bk-hero">
+          <div class="cv cv-md c1">
+            <span class="sn">#1</span>
+            <span class="ct serif">Dune</span>
+          </div>
+          <div class="bk-meta">
+            <div class="bk-title serif">Dune</div>
+            <div class="bk-sub">Frank Herbert · Debolsillo · 412 págs.</div>
+            <div class="bk-badges">
+              <span class="pill">Crónicas de Dune · #1</span>
+              <label for="scr-shelves" class="pill soft">
+                <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9"/><path d="M12 3v6"/></svg>
+                Librero Sala · Repisa 1
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hoja inferior interactiva de Estado de Lectura -->
+      <div class="sheet">
+        <div>
+          <div class="handle"></div>
+          <div class="lbl" style="margin-top:0">Estado de lectura <span>Toca para cambiar</span></div>
+
+          <!-- Píldoras de los 5 estados -->
+          <div class="st-bar hscroll">
+            <label for="st-tbr" class="st-chip">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+              Por leer
+            </label>
+            <label for="st-reading" class="st-chip">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              Leyendo
+            </label>
+            <label for="st-paused" class="st-chip">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/></svg>
+              En pausa
+            </label>
+            <label for="st-read" class="st-chip">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+              Leído
+            </label>
+            <label for="st-dnf" class="st-chip">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+              Abandonado
+            </label>
+          </div>
+
+          <!-- SUB-PANEL A: POR LEER (TBR) -->
+          <div class="st-pane pane-tbr">
+            <div class="note-card">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <b style="font-size:13px">Listo en tu fila de lectura (TBR)</b>
+                <span class="pill">Tomo #1 elegible</span>
+              </div>
+              <p class="muted" style="margin-top:6px">
+                Es el primer tomo de <b>Crónicas de Dune</b>. Entra automáticamente en la Ruleta TBR y desbloquea <i>El Mesías de Dune (#2)</i> al terminarlo.
+              </p>
+            </div>
+
+            <div class="lbl">Ubicación asignada</div>
+            <div class="log-item">
+              <div>
+                <b>Librero Sala · Repisa 1 (Ciencia Ficción)</b>
+                <div class="muted">También tienes copia eBook en Kindle</div>
+              </div>
+              <label for="scr-shelves" class="pill soft">Cambiar</label>
+            </div>
+
+            <label for="st-reading" class="cta acc" style="margin-top:14px">
+              <svg class="lucide" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Empezar a leer hoy (Pág. 1)
+            </label>
+          </div>
+
+          <!-- SUB-PANEL B: LEYENDO (Preferencia Páginas vs Capítulos + % Automático + Entrada Directa) -->
+          <div class="st-pane pane-reading">
+            <div class="lbl" style="margin-top:4px">Preferencia de visualización <span>El % se calcula solo</span></div>
+            <div class="seg two seg-pm">
+              <label for="pm-pages">Por Páginas</label>
+              <label for="pm-chap">Por Capítulos</label>
+            </div>
+
+            <!-- Caja de avance por PÁGINAS (Porcentaje automático) -->
+            <div class="pm-box pm-pages">
+              <div class="prog-header">
+                <div>
+                  <span class="prog-big" id="lbl-page-big">Pág. 142</span>
+                  <span class="muted"> de 412 págs.</span>
+                </div>
+                <span class="pill" id="lbl-page-pct">34.5% automático · Faltan 270</span>
+              </div>
+              <div class="prog-track"><div class="prog-fill" id="bar-page-fill"></div></div>
+              <div class="direct-input-row">
+                <div>
+                  <b style="font-size:13px;display:block">¿En qué página vas hoy?</b>
+                  <span class="muted">Escribe la página donde dejaste el separador</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="412"
+                  value="142"
+                  class="direct-input-field"
+                  oninput="
+                    var v = Math.max(0, Math.min(412, Number(this.value) || 0));
+                    var pct = ((v / 412) * 100).toFixed(1);
+                    document.getElementById('lbl-page-big').textContent = 'Pág. ' + v;
+                    document.getElementById('lbl-page-pct').textContent = pct + '% automático · Faltan ' + (412 - v);
+                    document.getElementById('bar-page-fill').style.width = pct + '%';
+                  "
+                />
+              </div>
+            </div>
+
+            <!-- Caja de avance por CAPÍTULOS (Porcentaje automático) -->
+            <div class="pm-box pm-chap">
+              <div class="prog-header">
+                <div>
+                  <span class="prog-big" id="lbl-chap-big">Cap. 17</span>
+                  <span class="muted"> de 48 capítulos</span>
+                </div>
+                <span class="pill" id="lbl-chap-pct">35.4% automático · Faltan 31 caps.</span>
+              </div>
+              <div class="prog-track"><div class="prog-fill" id="bar-chap-fill" style="width:35.4%"></div></div>
+              <div class="direct-input-row">
+                <div>
+                  <b style="font-size:13px;display:block">¿En qué capítulo o cuento vas?</b>
+                  <span class="muted">Calcula tu % de avance automáticamente</span>
+                </div>
+                <input
+                  type="number"
+                  min="0"
+                  max="48"
+                  value="17"
+                  class="direct-input-field"
+                  oninput="
+                    var c = Math.max(0, Math.min(48, Number(this.value) || 0));
+                    var cpct = ((c / 48) * 100).toFixed(1);
+                    document.getElementById('lbl-chap-big').textContent = 'Cap. ' + c;
+                    document.getElementById('lbl-chap-pct').textContent = cpct + '% automático · Faltan ' + (48 - c) + ' caps.';
+                    document.getElementById('bar-chap-fill').style.width = cpct + '%';
+                  "
+                />
+              </div>
+            </div>
+
+            <!-- Registro retroactivo (Hueco #4: Leí anoche antes de dormir) -->
+            <div class="retro-row">
+              <div>
+                <b style="font-size:12px;display:block">¿Cuándo leíste este avance?</b>
+                <span class="muted">Protege tu racha si leíste anoche</span>
+              </div>
+              <div class="retro-pills">
+                <label for="dt-today" class="retro-pill">Hoy</label>
+                <label for="dt-yest" class="retro-pill">Ayer</label>
+              </div>
+            </div>
+
+            <!-- Blindaje de Relectura (Hueco #5: No restar del contador de leídos) -->
+            <div class="reread-banner">
+              <div>
+                <b>Relectura #2 en curso</b>
+                <div class="muted">Tu 1ª lectura (2024) sigue sumando en Leídos</div>
+              </div>
+              <span class="pill">Protegido</span>
+            </div>
+
+            <div class="cta" style="margin-top:12px">
+              <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Guardar avance de lectura
+            </div>
+          </div>
+
+          <!-- SUB-PANEL C: EN PAUSA (Con Nota Anti-Olvido + Spoiler Blur) -->
+          <div class="st-pane pane-paused">
+            <div class="log-item" style="margin-top:2px">
+              <div>
+                <b>Progreso congelado en Pág. 142 (34.5%)</b>
+                <div class="muted">No afecta tu ritmo diario mientras esté en pausa</div>
+              </div>
+              <span class="pill gold">Pausado</span>
+            </div>
+
+            <div class="lbl">
+              Nota anti-olvido (¿Dónde te quedaste?)
+              <span>Indexada en FTS5</span>
+            </div>
+            <div class="note-card">
+              <p class="note-text note-blur-target">
+                Paul y Jessica acaban de escapar en el ornitóptero durante la tormenta de arena y conocieron a Stilgar en el Sietch Tabr. Pausado temporalmente por entrega de proyecto.
+              </p>
+              <div class="spoiler-toggle">
+                <span>Ocultar con desenfoque ante terceros (Spoiler)</span>
+                <label for="sp-blur" class="sw-pill">Desenfocar nota</label>
+              </div>
+            </div>
+
+            <div class="cta" style="margin-top:12px">Guardar estado en pausa y nota</div>
+            <label for="st-reading" class="btn2">Retomar lectura desde pág. 142</label>
+          </div>
+
+          <!-- SUB-PANEL D: LEÍDO (Estrellas 100% reactivas al toque directo en mitad izq/der, sin botones abajo) -->
+          <div class="st-pane pane-read">
+            <div class="stars-box">
+              <div class="muted">Toca la mitad izquierda (0.5) o derecha (1.0) de cada estrella</div>
+
+              <svg width="0" height="0" style="position:absolute">
+                <defs>
+                  <linearGradient id="halfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="50%" stop-color="#E9A23B" />
+                    <stop offset="50%" stop-color="transparent" />
+                  </linearGradient>
+                </defs>
+              </svg>
+
+              <div class="touch-stars" id="star-container">
+                <!-- Estrella 1 -->
+                <div class="star-unit" data-idx="1">
+                  <span class="star-hit-l" onclick="setRating(0.5)"></span>
+                  <span class="star-hit-r" onclick="setRating(1.0)"></span>
+                  <svg viewBox="0 0 24 24"><polygon class="st-poly" style="fill:#E9A23B" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <!-- Estrella 2 -->
+                <div class="star-unit" data-idx="2">
+                  <span class="star-hit-l" onclick="setRating(1.5)"></span>
+                  <span class="star-hit-r" onclick="setRating(2.0)"></span>
+                  <svg viewBox="0 0 24 24"><polygon class="st-poly" style="fill:#E9A23B" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <!-- Estrella 3 -->
+                <div class="star-unit" data-idx="3">
+                  <span class="star-hit-l" onclick="setRating(2.5)"></span>
+                  <span class="star-hit-r" onclick="setRating(3.0)"></span>
+                  <svg viewBox="0 0 24 24"><polygon class="st-poly" style="fill:#E9A23B" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <!-- Estrella 4 -->
+                <div class="star-unit" data-idx="4">
+                  <span class="star-hit-l" onclick="setRating(3.5)"></span>
+                  <span class="star-hit-r" onclick="setRating(4.0)"></span>
+                  <svg viewBox="0 0 24 24"><polygon class="st-poly" style="fill:#E9A23B" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+                <!-- Estrella 5 -->
+                <div class="star-unit" data-idx="5">
+                  <span class="star-hit-l" onclick="setRating(4.5)"></span>
+                  <span class="star-hit-r" onclick="setRating(5.0)"></span>
+                  <svg viewBox="0 0 24 24"><polygon class="st-poly" style="fill:url(#halfGrad)" points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                </div>
+              </div>
+
+              <span class="rt-val" id="rating-readout">4.5 / 5.0</span>
+            </div>
+
+            <div class="lbl">Historial de lecturas (READING_LOGS) <span>2 registros</span></div>
+            <div class="log-item">
+              <div>
+                <b>Lectura #1 · Finalizada</b>
+                <div class="muted">10 Oct 2024 – 28 Oct 2024 · 4.5 estrellas</div>
+              </div>
+              <span class="pill soft">412 págs.</span>
+            </div>
+            <div class="log-item">
+              <div>
+                <b>Relectura #2 · Finalizada hoy</b>
+                <div class="muted">01 Nov 2026 – 06 Nov 2026 · 5.0 estrellas</div>
+              </div>
+              <span class="pill">Actual</span>
+            </div>
+
+            <div class="cta" style="margin-top:12px">Confirmar libro terminado</div>
+            <label for="st-reading" class="btn2">Iniciar nueva relectura (#3) sin perder historial</label>
+          </div>
+
+          <!-- SUB-PANEL E: ABANDONADO (DNF) -->
+          <div class="st-pane pane-dnf">
+            <div class="log-item" style="border-color:var(--danger)">
+              <div>
+                <b>Abandonado en la página 88 de 412 (21%)</b>
+                <div class="muted">Las 88 páginas leídas sí se conservan en tus estadísticas</div>
+              </div>
+              <span class="pill acc">DNF</span>
+            </div>
+
+            <div class="lbl">Motivo de abandono (opcional)</div>
+            <div class="st-bar hscroll" style="padding-bottom:6px">
+              <span class="st-chip" style="background:var(--card);color:var(--fg)">Ritmo muy lento</span>
+              <span class="st-chip">Traducción pesada</span>
+              <span class="st-chip">No era el momento</span>
+            </div>
+            <div class="note-card">
+              <p class="note-text">
+                La terminología inicial me resultó densa en esta edición de bolsillo; planeo retomarlo más adelante en audiolibro o edición comentada.
+              </p>
+            </div>
+
+            <div class="cta acc" style="margin-top:12px">Marcar como Abandonado (conservar 88 págs.)</div>
+          </div>
+        </div>
+
+        <!-- Barra inferior del prototipo -->
+        <div class="dock" style="padding:10px 0 0">
+          <div class="tabs">
+            <label for="scr-status" class="tab on">
+              <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              Estados
+            </label>
+            <label for="scr-shelves" class="tab">
+              <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="M12 3v6"/></svg>
+              Estantes
+            </label>
+            <label for="scr-wish" class="tab">
+              <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              Wishlist
+            </label>
+            <label for="scr-wheel" class="tab">
+              <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+              Ruleta
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         2. GESTOR VISUAL DE ESTANTERÍAS Y UBICACIÓN FÍSICA / DIGITAL
+         ===================================================================== -->
+    <div id="s-shelves" class="scr">
+      <div>
+        <div class="sbar"><span>9:41</span><span>Ubicación Física y Digital</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Mis Estanterías</h1>
+            <p class="muted">2 muebles físicos · 2 ecosistemas digitales</p>
+          </div>
+          <label for="sh-move" class="pill">
+            <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Nueva repisa
+          </label>
+        </div>
+
+        <div style="padding:0 20px 12px">
+          <div class="seg seg-sh">
+            <label for="sh-phys">Muebles físicos</label>
+            <label for="sh-dig">Colecciones eBook</label>
+            <label for="sh-move">Mover / Ediciones</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: MUEBLES Y REPISAS FÍSICAS -->
+      <div class="sh-pane sh-pane-phys">
+        <div class="furniture">
+          <div class="furn-hdr">
+            <div class="furn-title serif">
+              <span class="color-dot" style="background:#1E4635"></span>
+              Librero Sala Principal
+            </div>
+            <span class="pill soft">6 libros</span>
+          </div>
+
+          <div class="shelf-row">
+            <div class="shelf-top">
+              <span>Repisa 1 · Ciencia Ficción y Sagas</span>
+              <span class="muted">3 físicos</span>
+            </div>
+            <div class="mini-spines">
+              <div class="cv cv-sm c1"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
+              <div class="cv cv-sm c3"><span class="sn">#3</span><span class="ct serif">Hijos</span></div>
+              <div class="cv cv-sm c8"><span class="ct serif">Hail Mary</span></div>
+            </div>
+          </div>
+
+          <div class="shelf-row terra">
+            <div class="shelf-top">
+              <span>Repisa 2 · Narrativa Latinoamericana</span>
+              <span class="muted">3 físicos</span>
+            </div>
+            <div class="mini-spines">
+              <div class="cv cv-sm c6"><span class="ct serif">Rayuela</span></div>
+              <div class="cv cv-sm c7"><span class="ct serif">Ficciones</span></div>
+              <div class="cv cv-sm c4"><span class="sn">#1</span><span class="ct serif">Sombra</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="furniture">
+          <div class="furn-hdr">
+            <div class="furn-title serif">
+              <span class="color-dot" style="background:#B85F30"></span>
+              Buró Recámara
+            </div>
+            <span class="pill soft">1 en lectura</span>
+          </div>
+          <div class="shelf-row navy" style="margin-top:4px">
+            <div class="shelf-top">
+              <span>Mesa de noche (Lectura actual)</span>
+              <label for="scr-status" class="pill">Leyendo pág. 142</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA B: ECOSISTEMAS Y COLECCIONES DIGITALES -->
+      <div class="sh-pane sh-pane-dig">
+        <div class="furniture">
+          <div class="furn-hdr">
+            <div class="furn-title serif">
+              <svg class="lucide" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+              Mi Kindle Paperwhite
+            </div>
+            <span class="pill">3 eBooks</span>
+          </div>
+          <p class="muted" style="margin-bottom:8px">Porcentaje calculado automáticamente según tu avance de páginas o capítulos.</p>
+          <div class="mini-spines">
+            <div class="cv cv-sm c1"><span class="eb">KDL</span><span class="ct serif">Dune</span></div>
+            <div class="cv cv-sm c2"><span class="eb">KDL</span><span class="ct serif">Mesías</span></div>
+            <div class="cv cv-sm c8"><span class="eb">KDL</span><span class="ct serif">Hail Mary</span></div>
+          </div>
+        </div>
+
+        <div class="furniture">
+          <div class="furn-hdr">
+            <div class="furn-title serif">
+              <svg class="lucide" viewBox="0 0 24 24"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+              Apple Books / EPUB Local
+            </div>
+            <span class="pill soft">2 archivos</span>
+          </div>
+          <div class="log-item">
+            <div>
+              <b>Cuentos Completos · J. L. Borges</b>
+              <div class="muted">Formato EPUB_PDF · Avance por capítulos</div>
+            </div>
+            <span class="pill soft">Digital</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA C: MOVER DE REPISA Y DIÁLOGO DE MÚLTIPLES EDICIONES -->
+      <div class="sh-pane sh-pane-move">
+        <div class="furniture">
+          <div class="furn-hdr">
+            <b style="font-size:14px">Múltiples ediciones detectadas (2 copias)</b>
+            <span class="pill gold">Coleccionista</span>
+          </div>
+          <p class="muted">Tienes <b>Dune (#1)</b> en dos formatos distintos. Cada ejemplar conserva su propia ubicación sin duplicar tu historial de lectura:</p>
+
+          <div class="log-item" style="margin-top:10px">
+            <div>
+              <b>1. Edición Tapa Dura · Minotauro</b>
+              <div class="muted">ISBN 978-84-450-0720-4 · Físico</div>
+            </div>
+            <span class="pill">Librero Sala · Rep. 1</span>
+          </div>
+
+          <div class="log-item">
+            <div>
+              <b>2. Edición Digital · Debolsillo</b>
+              <div class="muted">eBook Kindle · Sincronizado al 34.5%</div>
+            </div>
+            <span class="pill soft">Mi Kindle</span>
+          </div>
+        </div>
+
+        <div class="furniture">
+          <b style="font-size:14px;display:block;margin-bottom:6px">Mover ejemplar físico a otra ubicación</b>
+          <div class="log-item">
+            <span>Librero Sala · Repisa 1 (Actual)</span>
+            <span class="pill">Seleccionado</span>
+          </div>
+          <div class="log-item">
+            <span>Buró Recámara · Mesa de noche</span>
+            <span class="pill soft">Mover aquí</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-status" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Estados
+          </label>
+          <label for="scr-shelves" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="M12 3v6"/></svg>
+            Estantes
+          </label>
+          <label for="scr-wish" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Wishlist
+          </label>
+          <label for="scr-wheel" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            Ruleta
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         3. WISHLIST DE COMPRAS CON TIENDA, PRECIO Y HUECOS DE SAGA
+         ===================================================================== -->
+    <div id="s-wish" class="scr">
+      <div>
+        <div class="sbar"><span>9:41</span><span>Modo Librería / Feria del Libro</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Wishlist</h1>
+            <p class="muted">Separada de tu inventario propio (OWNED)</p>
+          </div>
+          <span class="pill acc">2 huecos de saga</span>
+        </div>
+
+        <div style="padding:0 20px 12px">
+          <div class="seg seg-ws">
+            <label for="ws-all">Deseados (4)</label>
+            <label for="ws-saga">Completar sagas</label>
+            <label for="ws-buy">Ya lo compré</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: LISTA COMPLETA DE DESEADOS CON TIENDA Y PRECIO -->
+      <div class="ws-pane ws-pane-all">
+        <div class="wish-card">
+          <div class="cv cv-sm c5"><span class="sn">#2</span><span class="ct serif">El juego del ángel</span></div>
+          <div class="wish-info">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+              <b style="font-size:14px">El juego del ángel (#2)</b>
+              <span class="pill acc">Falta el #2</span>
+            </div>
+            <div class="muted">C. Ruiz Zafón · Planeta · Tapa blanda</div>
+            <div class="store-tag">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+              Gandhi Coyoacán · <span class="price-tag">$385 MXN</span>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <label for="ws-buy" class="pill">Ya lo compré</label>
+              <span class="pill soft">Editar tienda</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="wish-card">
+          <div class="cv cv-sm c7"><span class="sn">#4</span><span class="ct serif">Dios Emperador</span></div>
+          <div class="wish-info">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:4px">
+              <b style="font-size:14px">Dios Emperador de Dune (#4)</b>
+              <span class="pill soft">Saga Dune</span>
+            </div>
+            <div class="muted">Frank Herbert · Ediciones Minotauro</div>
+            <div class="store-tag">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
+              Amazon / Kindle · <span class="price-tag">$149 MXN</span>
+            </div>
+            <div style="margin-top:8px;display:flex;gap:8px">
+              <label for="ws-buy" class="pill">Ya lo compré</label>
+              <span class="pill soft">Editar nota</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA B: HUECOS DE SAGA DETECTADOS AUTOMÁTICAMENTE -->
+      <div class="ws-pane ws-pane-saga">
+        <div class="guard-banner">
+          <svg class="lucide" style="margin-top:2px;color:var(--pri)" viewBox="0 0 24 24"><path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>
+          <div>
+            <b>Detector de huecos en tus sagas</b>
+            <p class="muted" style="margin-top:2px">Tienes los tomos #1 y #3 de <i>El Cementerio de los Libros Olvidados</i> en casa, pero te falta el <b>#2</b> para poder continuar en orden.</p>
+          </div>
+        </div>
+
+        <div class="wish-card">
+          <div class="cv cv-sm c5"><span class="sn">#2</span><span class="ct serif">El juego del ángel</span></div>
+          <div class="wish-info">
+            <b style="font-size:14px">El juego del ángel (#2)</b>
+            <div class="muted">Prioridad alta · Desbloquea tu tomo #3 en casa</div>
+            <div class="store-tag">Gandhi Coyoacán · <span class="price-tag">$385 MXN</span></div>
+            <label for="ws-buy" class="cta acc" style="margin-top:10px;min-height:40px;font-size:13px">Lo compré · Mover a Mi Librero</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA C: FLUJO DE 1 TOQUE "YA LO COMPRÉ -> MOVER A MI LIBRERO" -->
+      <div class="ws-pane ws-pane-buy">
+        <div class="furniture">
+          <div class="furn-hdr">
+            <b style="font-size:15px">Pasar de Wishlist a Mi Librero</b>
+            <span class="pill">OWNED + POR_LEER</span>
+          </div>
+          <p class="muted" style="margin-bottom:10px">
+            Al confirmar la compra de <b>El juego del ángel (#2)</b>, se suma a tu inventario propio y completa el hueco de la saga:
+          </p>
+
+          <div class="lbl">¿Dónde lo vas a colocar?</div>
+          <div class="log-item">
+            <div>
+              <b>Librero Sala · Repisa 2 (Narrativa)</b>
+              <div class="muted">Junto a los tomos #1 y #3 de Carlos Ruiz Zafón</div>
+            </div>
+            <span class="pill">Elegido</span>
+          </div>
+          <div class="log-item">
+            <div>
+              <b>Mi Kindle / eBook</b>
+              <div class="muted">Cambiar modalidad a DIGITAL</div>
+            </div>
+            <span class="pill soft">Elegir</span>
+          </div>
+
+          <label for="scr-shelves" class="cta" style="margin-top:14px">
+            <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Guardar en Mi Librero y quitar de Wishlist
+          </label>
+        </div>
+      </div>
+
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-status" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Estados
+          </label>
+          <label for="scr-shelves" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="M12 3v6"/></svg>
+            Estantes
+          </label>
+          <label for="scr-wish" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Wishlist
+          </label>
+          <label for="scr-wheel" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            Ruleta
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         4. RULETA INTERACTIVA TBR ("¿QUÉ LEO HOY?") CON PROTECCIÓN DE SAGAS
+         ===================================================================== -->
+    <div id="s-wheel" class="scr">
+      <div>
+        <div class="sbar"><span>9:41</span><span>Selector Inteligente TBR</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">¿Qué leo hoy?</h1>
+            <p class="muted">Elige al azar entre tus libros pendientes</p>
+          </div>
+          <label for="wh-guard" class="pill">
+            <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Orden de sagas
+          </label>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: CONFIGURAR GIRO DE LA RULETA -->
+      <div class="wh-pane wh-pane-ready">
+        <div class="guard-banner">
+          <svg class="lucide" style="margin-top:2px;color:var(--pri)" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div>
+            <b>Protección de orden de sagas activa</b>
+            <div class="muted">3 secuelas excluidas automáticamente hasta que leas su tomo previo (#2 y #3 de Dune, #3 de Zafón).</div>
+          </div>
+        </div>
+
+        <div class="wheel-stage">
+          <div class="muted" style="font-weight:700">5 candidatos elegibles hoy en tu TBR</div>
+          <div class="wheel-ring">
+            <div class="cv cv-sm c6 wheel-slot"><span class="ct serif">Rayuela</span></div>
+            <div class="cv cv-md c1 wheel-slot active"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
+            <div class="cv cv-sm c7 wheel-slot"><span class="ct serif">Ficciones</span></div>
+            <div class="cv cv-sm c8 wheel-slot"><span class="eb">eB</span><span class="ct serif">Hail Mary</span></div>
+          </div>
+          <div class="muted">Nunca sugiere libros en Wishlist ni secuelas fuera de orden</div>
+        </div>
+
+        <div class="lbl">Filtrar por formato</div>
+        <div class="st-bar hscroll" style="padding-bottom:6px">
+          <label for="wf-all" class="st-chip">Todos (5)</label>
+          <label for="wf-phys" class="st-chip">Solo físicos (3)</label>
+          <label for="wf-eb" class="st-chip">Solo eBooks (2)</label>
+        </div>
+
+        <div class="lbl">Tiempo / Extensión de páginas</div>
+        <div class="st-bar hscroll">
+          <label for="wl-any" class="st-chip">Cualquier extensión</label>
+          <label for="wl-short" class="st-chip">Corto (&lt; 250 págs)</label>
+          <label for="wl-long" class="st-chip">Épico (&gt; 400 págs)</label>
+        </div>
+
+        <label for="wh-win" class="cta acc" style="margin-top:8px">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+          Girar la Ruleta TBR
+        </label>
+      </div>
+
+      <!-- SUB-VISTA B: LIBRO GANADOR DE LA RULETA -->
+      <div class="wh-pane wh-pane-win">
+        <div class="wheel-stage" style="padding:18px">
+          <span class="pill gold" style="margin-bottom:10px">Seleccionado para empezar hoy</span>
+          <div style="display:flex;justify-content:center;margin:8px 0 12px">
+            <div class="cv cv-lg c8">
+              <span class="eb">eBook</span>
+              <span class="ct serif">Proyecto Hail Mary</span>
+              <span class="ca">Andy Weir</span>
+            </div>
+          </div>
+          <div class="bk-title serif">Proyecto Hail Mary</div>
+          <div class="muted" style="margin-top:2px">Andy Weir · Nova · 480 págs. · Autoconclusivo</div>
+
+          <div class="log-item" style="text-align:left;margin-top:12px">
+            <div>
+              <b>¿Dónde está ahora mismo?</b>
+              <div class="muted">En tu Kindle Paperwhite y en Librero Sala · Repisa 1</div>
+            </div>
+            <span class="pill">Listo</span>
+          </div>
+        </div>
+
+        <label for="scr-status" class="cta">
+          <svg class="lucide" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Empezar a leer ahora (Pasar a Leyendo)
+        </label>
+        <label for="wh-ready" class="btn2">Girar otra vez (descartar por hoy)</label>
+      </div>
+
+      <!-- SUB-VISTA C: AUDITORÍA DE LA REGLA DE ORDEN DE SAGAS -->
+      <div class="wh-pane wh-pane-guard">
+        <div class="furniture">
+          <div class="furn-hdr">
+            <b style="font-size:14px">Auditoría del filtro de Sagas</b>
+            <span class="pill">Regla estricta</span>
+          </div>
+          <p class="muted" style="margin-bottom:8px">
+            La Ruleta evalúa `series_name` y `series_index` contra tus libros con `read_count >= 1`:
+          </p>
+
+          <div class="log-item">
+            <div>
+              <b>Dune (Crónicas de Dune #1)</b>
+              <div class="muted">Primer tomo pendiente de la saga</div>
+            </div>
+            <span class="pill">Elegible</span>
+          </div>
+
+          <div class="log-item">
+            <div>
+              <b>El Mesías de Dune (#2) e Hijos de Dune (#3)</b>
+              <div class="muted">Bloqueados hasta que #1 esté en estado LEIDO</div>
+            </div>
+            <span class="pill acc">Retenidos</span>
+          </div>
+
+          <div class="log-item">
+            <div>
+              <b>El prisionero del cielo (Zafón #3)</b>
+              <div class="muted">Bloqueado: falta comprar y leer el tomo #2 (en Wishlist)</div>
+            </div>
+            <span class="pill acc">Retenido</span>
+          </div>
+        </div>
+        <label for="wh-ready" class="btn2">Volver a la Ruleta TBR</label>
+      </div>
+
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-status" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Estados
+          </label>
+          <label for="scr-shelves" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z"/><path d="M12 3v6"/></svg>
+            Estantes
+          </label>
+          <label for="scr-wish" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            Wishlist
+          </label>
+          <label for="scr-wheel" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            Ruleta
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function setRating(val) {
+  var readout = document.getElementById('rating-readout');
+  if (readout) {
+    readout.textContent = val.toFixed(1) + ' / 5.0';
+  }
+  var units = document.querySelectorAll('#star-container .star-unit');
+  units.forEach(function(unit) {
+    var idx = Number(unit.getAttribute('data-idx'));
+    var poly = unit.querySelector('.st-poly');
+    if (!poly) return;
+    if (val >= idx) {
+      poly.style.fill = '#E9A23B';
+    } else if (val >= idx - 0.5) {
+      poly.style.fill = 'url(#halfGrad)';
+    } else {
+      poly.style.fill = 'transparent';
+    }
+  });
+}
+</script>
+</body>
+</html>
