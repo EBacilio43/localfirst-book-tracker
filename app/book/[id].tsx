@@ -29,15 +29,23 @@ import {
 } from 'lucide-react-native';
 import { BooksRepository } from '@/db/repositories/booksRepository';
 import { ReadingLogsRepository } from '@/db/repositories/readingLogsRepository';
+import { ReadingSessionsRepository } from '@/db/repositories/readingSessionsRepository';
 import { ShelvesRepository } from '@/db/repositories/shelvesRepository';
 import { Book } from '@/db/schema/books';
 import { Shelf } from '@/db/schema/shelves';
 import { ReadingLog } from '@/db/schema/readingLogs';
+import { ReadingSession } from '@/db/schema/readingSessions';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
 import { BookDetailSkeleton } from '@/shared/components/Skeleton';
 import { HalfStarRating } from '@/features/reading-tracker/components/HalfStarRating';
 import { ReadingStatusModal } from '@/features/reading-tracker/components/ReadingStatusModal';
+import {
+  ReadingTimerModal,
+  SavedSessionData,
+} from '@/features/reading-tracker/components/ReadingTimerModal';
+import { BookCompletionEtaCard } from '@/features/goals-analytics/components/BookCompletionEtaCard';
+import { calculateReaderVelocity } from '@/features/goals-analytics/services/forecastingService';
 import {
   ShelvesManagerModal,
   DigitalCollectionKey,
@@ -105,6 +113,7 @@ export default function BookDetailScreen() {
 
   const [book, setBook] = useState<Book | null>(null);
   const [readingLogs, setReadingLogs] = useState<ReadingLog[]>([]);
+  const [readingSessions, setReadingSessions] = useState<ReadingSession[]>([]);
   const [shelves, setShelves] = useState<Shelf[]>([]);
   const [multipleEditions, setMultipleEditions] = useState<Book[]>([]);
 
@@ -112,20 +121,24 @@ export default function BookDetailScreen() {
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [isReadingStatusModalVisible, setIsReadingStatusModalVisible] =
     useState(false);
+  const [isTimerModalVisible, setIsTimerModalVisible] = useState(false);
   const [isShelvesModalVisible, setIsShelvesModalVisible] = useState(false);
   const [isSpoilerNoteRevealed, setIsSpoilerNoteRevealed] = useState(false);
 
   const loadBookData = useCallback(async () => {
     if (!id) return;
     try {
-      const [foundBook, logs, allShelves, editions] = await Promise.all([
-        BooksRepository.getById(id),
-        ReadingLogsRepository.getByBookId(id),
-        ShelvesRepository.getAll(),
-        BooksRepository.getMultipleEditions(id),
-      ]);
+      const [foundBook, logs, allSessions, allShelves, editions] =
+        await Promise.all([
+          BooksRepository.getById(id),
+          ReadingLogsRepository.getByBookId(id),
+          ReadingSessionsRepository.getAll(),
+          ShelvesRepository.getAll(),
+          BooksRepository.getMultipleEditions(id),
+        ]);
       setBook(foundBook);
       setReadingLogs(logs);
+      setReadingSessions(allSessions);
       setShelves(allShelves);
       setMultipleEditions(editions);
     } catch (err) {
@@ -159,6 +172,28 @@ export default function BookDetailScreen() {
       await loadBookData();
     } catch {
       Alert.alert('Error', 'No se pudo guardar el avance de lectura');
+    }
+  };
+
+  // Manejo de sesión con cronómetro persistente y Outlier Guard
+  const handleSaveTimedSession = async (data: SavedSessionData) => {
+    if (!book) return;
+    try {
+      await ReadingSessionsRepository.createTimedSession({
+        bookId: book.id,
+        startPage: data.startPage,
+        endPage: data.endPage,
+        durationSeconds: data.durationSeconds,
+        startedAtEpochMs: data.startedAtEpochMs,
+        localDateOverride: data.localDate,
+        outlierResolution:
+          data.outlierResolution === 'NORMAL' ? 'NONE' : data.outlierResolution,
+        averageSpeedPagesPerHour: readerVelocity.pagesPerHour,
+      });
+      setIsTimerModalVisible(false);
+      await loadBookData();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar la sesión del cronómetro');
     }
   };
 
@@ -327,6 +362,11 @@ export default function BookDetailScreen() {
     if (!book || !book.shelfId) return null;
     return shelves.find((s) => s.id === book.shelfId) || null;
   }, [book, shelves]);
+
+  const readerVelocity = useMemo(
+    () => calculateReaderVelocity(readingSessions),
+    [readingSessions]
+  );
 
   if (isLoading) {
     return (
@@ -557,6 +597,19 @@ export default function BookDetailScreen() {
           />
         </View>
 
+        {/* Tarjeta de Predicción ETA y Acceso al Cronómetro Persistente */}
+        {!isWishlist ? (
+          <View style={styles.etaCardWrapper}>
+            <BookCompletionEtaCard
+              book={book}
+              pagesPerHour={readerVelocity.pagesPerHour}
+              pagesPerDay={readerVelocity.pagesPerDay}
+              isColdStart={readerVelocity.isColdStart}
+              onOpenTimer={() => setIsTimerModalVisible(true)}
+            />
+          </View>
+        ) : null}
+
         {/* Tarjeta de Nota Anti-Olvido con soporte para Spoilers */}
         {book.pauseOrDnfNote && book.pauseOrDnfNote.trim().length > 0 ? (
           <View style={styles.card}>
@@ -781,6 +834,17 @@ export default function BookDetailScreen() {
           onAssignDigitalCollection={handleAssignDigitalCollection}
           onCreateShelf={handleCreateShelf}
           onRemoveFromShelf={handleRemoveFromShelf}
+        />
+      ) : null}
+
+      {/* Modal de Cronómetro Lector Persistente y Outlier Guard */}
+      {book ? (
+        <ReadingTimerModal
+          visible={isTimerModalVisible}
+          book={book}
+          userAverageSpeed={readerVelocity.pagesPerHour}
+          onClose={() => setIsTimerModalVisible(false)}
+          onSaveSession={handleSaveTimedSession}
         />
       ) : null}
     </View>
@@ -1191,5 +1255,8 @@ const styles = StyleSheet.create({
   },
   actionButtonMargin: {
     marginTop: 4,
+  },
+  etaCardWrapper: {
+    marginBottom: 14,
   },
 });
