@@ -786,6 +786,17 @@ export default function SearchScreen() {
                 ))}
               </ScrollView>
             </View>
+
+            {/* Aviso de catalogo de muestra si no hay clave de API configurada */}
+            {!process.env.EXPO_PUBLIC_GEMINI_API_KEY &&
+            !process.env.EXPO_PUBLIC_GEMINI_PROXY_URL ? (
+              <View style={styles.demoNoticeContainer}>
+                <Sparkles size={14} color="#b45309" />
+                <Text style={styles.demoNoticeText}>
+                  Catálogo de muestra activo. Para buscar cualquier libro del mundo con inteligencia artificial en tiempo real, agrega tu clave en el archivo de configuración.
+                </Text>
+              </View>
+            ) : null}
           </View>
 
           {isSearchingAi ? (
@@ -1420,5 +1431,23 @@ const styles = StyleSheet.create({
   noResultsButton: {
     marginTop: 8,
     width: '100%',
+  },
+  demoNoticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#fef3e7',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#fed7aa',
+  },
+  demoNoticeText: {
+    flex: 1,
+    fontSize: 11,
+    color: '#9a3412',
+    lineHeight: 16,
   },
 });
