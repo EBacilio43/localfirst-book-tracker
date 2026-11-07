@@ -1,4 +1,4 @@
-# BaciBooks 📚
+# LocalFirst Book Tracker 📚
 
 > **Tu biblioteca física y digital unificada, con portadas reales, motor de lectura inteligente y arquitectura Local-First.**
 
@@ -86,7 +86,7 @@ BaciBooks/
 ## 🗺️ Roadmap por Fases
 
 - [x] **Fase 0:** Arquitectura, prototipo interactivo de pantallas y auditoría técnica 360° ([AGENTS.md](AGENTS.md)).
-- [ ] **Fase 1 (`v0.1.0`):** Cimientos de ingeniería, SQLite + Drizzle, Escáner ISBN exacto (Individual y Ráfaga), y estantería de libros físicos y digitales.
+- [x] **Fase 1 (`v0.1.0`):** Cimientos de ingeniería, SQLite + Drizzle, Escáner ISBN exacto (Individual y Ráfaga), y estantería de libros físicos y digitales.
 - [ ] **Fase 2 (`v0.2.0`):** Ciclo completo de estados de lectura, organización por ubicación física, Sagas y Ruleta TBR.
 - [ ] **Fase 3 (`v0.3.0`):** Cronómetro por timestamps, metas mensual/anual y motor de predicciones de lectura.
 - [ ] **Fase 4 (`v0.4.0`):** Búsqueda Inteligente con IA (Gemini), escáner OCR de citas y control de préstamos.
@@ -104,8 +104,8 @@ BaciBooks/
 ### Instalación
 ```bash
 # Clonar el repositorio
-git clone https://github.com/tu-usuario/BaciBooks.git
-cd BaciBooks
+git clone https://github.com/EBacilio43/localfirst-book-tracker.git
+cd localfirst-book-tracker
 
 # Instalar dependencias
 npm install

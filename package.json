@@ -1,6 +1,9 @@
 {
-  "name": "bacibooks",
+  "name": "localfirst-book-tracker",
   "version": "0.1.0",
+  "description": "Production-ready Local-First mobile app built with React Native (Expo 52), Drizzle ORM, SQLite FTS5, camera EAN-13 scanner and offline-first architecture.",
+  "author": "Eduardo Bacilio <lalo32sky@gmail.com>",
+  "license": "MIT",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
