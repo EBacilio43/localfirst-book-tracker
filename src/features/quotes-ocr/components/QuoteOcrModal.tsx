@@ -48,9 +48,9 @@ const ENTRY_TYPES: Array<{
   label: string;
   icon: typeof BookOpen;
 }> = [
-  { key: 'QUOTE', label: 'Cita (QUOTE)', icon: BookOpen },
-  { key: 'CHARACTER', label: 'Personaje (CHARACTER)', icon: User },
-  { key: 'NOTE', label: 'Nota / Glosario (NOTE)', icon: FileText },
+  { key: 'QUOTE', label: 'Cita literaria', icon: BookOpen },
+  { key: 'CHARACTER', label: 'Personaje', icon: User },
+  { key: 'NOTE', label: 'Nota o término', icon: FileText },
 ];
 
 const HIGHLIGHT_PALETTE = [

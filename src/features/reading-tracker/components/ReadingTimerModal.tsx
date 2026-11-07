@@ -381,7 +381,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                       <Text style={styles.statusIndicatorText}>
                         {isPaused
                           ? 'Sesión en pausa'
-                          : 'Timestamp activo · Pantalla apagada segura'}
+                          : 'Cronómetro activo · Sigue contando con pantalla apagada'}
                       </Text>
                     </View>
 
@@ -480,7 +480,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                       <View style={styles.finishSummaryTextCol}>
                         <Text style={styles.cardHeaderTitle}>Cerrar sesión de lectura</Text>
                         <Text style={styles.cardHeaderSubtitle}>
-                          Duración medida por timestamps:{' '}
+                          Tiempo total medido:{' '}
                           <Text style={styles.boldText}>
                             {formatHoursMinutes(totalSeconds)} ({durationHours.toFixed(2)} h)
                           </Text>
