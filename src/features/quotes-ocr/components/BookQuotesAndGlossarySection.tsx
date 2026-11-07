@@ -188,7 +188,7 @@ export const BookQuotesAndGlossarySection: React.FC<BookQuotesAndGlossarySection
               : 'Aún no has registrado citas para este libro'}
           </Text>
           <Text style={styles.emptySubtitle}>
-            Usa el escáner OCR on-device para capturar pasajes sin escribir a mano.
+            Fotografía páginas de tus libros para capturar frases sin escribirlas a mano.
           </Text>
         </View>
       ) : (

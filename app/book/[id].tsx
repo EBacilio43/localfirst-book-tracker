@@ -745,8 +745,8 @@ export default function BookDetailScreen() {
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitle}>
                 {book.currentStatus === 'ABANDONADO'
-                  ? 'Motivo de Abandono (DNF)'
-                  : 'Nota Anti-Olvido'}
+                  ? 'Motivo de abandono'
+                  : 'Nota anti-olvido'}
               </Text>
               {book.isSpoiler ? (
                 <View style={styles.spoilerPill}>

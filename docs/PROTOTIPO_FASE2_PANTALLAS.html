@@ -363,7 +363,7 @@ label{cursor:pointer;user-select:none}
         <label for="st-reading" class="tg">Leyendo</label>
         <label for="st-paused" class="tg">En pausa</label>
         <label for="st-read" class="tg">Leído</label>
-        <label for="st-dnf" class="tg">DNF</label>
+        <label for="st-dnf" class="tg">Abandonado</label>
       </div>
     </div>
 
@@ -386,7 +386,7 @@ label{cursor:pointer;user-select:none}
     </div>
 
     <div class="subpanel sp-wheel">
-      <div class="subpanel-title"><span>Estado de la Ruleta TBR:</span><span>Saga Guard activo</span></div>
+      <div class="subpanel-title"><span>¿Qué leo hoy?:</span><span>Filtro de sagas activo</span></div>
       <div class="tg-grid three">
         <label for="wh-ready" class="tg">Configurar giro</label>
         <label for="wh-win" class="tg">Libro ganador</label>
@@ -459,11 +459,11 @@ label{cursor:pointer;user-select:none}
           <div class="st-pane pane-tbr">
             <div class="note-card">
               <div style="display:flex;justify-content:space-between;align-items:center">
-                <b style="font-size:13px">Listo en tu fila de lectura (TBR)</b>
+                <b style="font-size:13px">Listo en tu lista por leer</b>
                 <span class="pill">Tomo #1 elegible</span>
               </div>
               <p class="muted" style="margin-top:6px">
-                Es el primer tomo de <b>Crónicas de Dune</b>. Entra automáticamente en la Ruleta TBR y desbloquea <i>El Mesías de Dune (#2)</i> al terminarlo.
+                Es el primer tomo de <b>Crónicas de Dune</b>. Entra automáticamente en la ruleta "¿Qué leo hoy?" y desbloquea <i>El Mesías de Dune (#2)</i> al terminarlo.
               </p>
             </div>
 
@@ -593,7 +593,7 @@ label{cursor:pointer;user-select:none}
 
             <div class="lbl">
               Nota anti-olvido (¿Dónde te quedaste?)
-              <span>Indexada en FTS5</span>
+              <span>En tu biblioteca</span>
             </div>
             <div class="note-card">
               <p class="note-text note-blur-target">
@@ -659,7 +659,7 @@ label{cursor:pointer;user-select:none}
               <span class="rt-val" id="rating-readout">4.5 / 5.0</span>
             </div>
 
-            <div class="lbl">Historial de lecturas (READING_LOGS) <span>2 registros</span></div>
+            <div class="lbl">Historial de lecturas <span>2 registros</span></div>
             <div class="log-item">
               <div>
                 <b>Lectura #1 · Finalizada</b>
@@ -686,7 +686,7 @@ label{cursor:pointer;user-select:none}
                 <b>Abandonado en la página 88 de 412 (21%)</b>
                 <div class="muted">Las 88 páginas leídas sí se conservan en tus estadísticas</div>
               </div>
-              <span class="pill acc">DNF</span>
+              <span class="pill acc">Abandonado</span>
             </div>
 
             <div class="lbl">Motivo de abandono (opcional)</div>
@@ -1051,7 +1051,7 @@ label{cursor:pointer;user-select:none}
          ===================================================================== -->
     <div id="s-wheel" class="scr">
       <div>
-        <div class="sbar"><span>9:41</span><span>Selector Inteligente TBR</span></div>
+        <div class="sbar"><span>9:41</span><span>Selector Inteligente de Lectura</span></div>
         <div class="hdr">
           <div>
             <h1 class="h1 serif">¿Qué leo hoy?</h1>
@@ -1075,7 +1075,7 @@ label{cursor:pointer;user-select:none}
         </div>
 
         <div class="wheel-stage">
-          <div class="muted" style="font-weight:700">5 candidatos elegibles hoy en tu TBR</div>
+          <div class="muted" style="font-weight:700">5 libros pendientes para elegir hoy</div>
           <div class="wheel-ring">
             <div class="cv cv-sm c6 wheel-slot"><span class="ct serif">Rayuela</span></div>
             <div class="cv cv-md c1 wheel-slot active"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
@@ -1101,7 +1101,7 @@ label{cursor:pointer;user-select:none}
 
         <label for="wh-win" class="cta acc" style="margin-top:8px">
           <svg class="lucide" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-          Girar la Ruleta TBR
+          Girar la ruleta "¿Qué leo hoy?"
         </label>
       </div>
 
@@ -1170,7 +1170,7 @@ label{cursor:pointer;user-select:none}
             <span class="pill acc">Retenido</span>
           </div>
         </div>
-        <label for="wh-ready" class="btn2">Volver a la Ruleta TBR</label>
+        <label for="wh-ready" class="btn2">Volver a la ruleta</label>
       </div>
 
       <div class="dock">

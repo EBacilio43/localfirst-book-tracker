@@ -138,8 +138,8 @@ describe('Fase 4 Componentes Visuales: quotes-ocr y loans', () => {
       expect(getByTestId('ocr-hyphens-badge')).toBeTruthy();
       expect(getByText('2 guiones de corte unidos automáticamente')).toBeTruthy();
 
-      // Cambiar clasificacion a Personaje (CHARACTER)
-      fireEvent.press(getByText('Personaje (CHARACTER)'));
+      // Cambiar clasificacion a Personaje
+      fireEvent.press(getByText('Personaje'));
 
       // Activar proteccion anti-spoilers
       fireEvent.press(getByText('Contiene spoiler'));

@@ -335,7 +335,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                 <Text
                   style={[styles.tabButtonText, activeTab === 'OUTLIER' && styles.tabButtonTextActive]}
                 >
-                  Outlier Guard
+                  Sesión atípica
                 </Text>
               </Pressable>
             </View>
@@ -381,7 +381,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                       <Text style={styles.statusIndicatorText}>
                         {isPaused
                           ? 'Sesión en pausa'
-                          : 'Timestamp activo · Pantalla apagada segura'}
+                          : 'Cronómetro activo · Sigue contando con pantalla apagada'}
                       </Text>
                     </View>
 
@@ -453,7 +453,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                       />
                     </View>
                     <Text style={styles.habitNote}>
-                      Se guarda con SafeButton e idempotencia transaccional en SQLite.
+                      Tu lectura se guarda de forma segura en tu teléfono.
                     </Text>
                   </View>
 
@@ -480,7 +480,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                       <View style={styles.finishSummaryTextCol}>
                         <Text style={styles.cardHeaderTitle}>Cerrar sesión de lectura</Text>
                         <Text style={styles.cardHeaderSubtitle}>
-                          Duración medida por timestamps:{' '}
+                          Tiempo total medido:{' '}
                           <Text style={styles.boldText}>
                             {formatHoursMinutes(totalSeconds)} ({durationHours.toFixed(2)} h)
                           </Text>
@@ -538,9 +538,9 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                     {/* Selector de fecha local (Hoy vs Ayer) */}
                     <View style={styles.retroDateContainer}>
                       <View style={styles.retroTextCol}>
-                        <Text style={styles.retroTitle}>Fecha local (local_date)</Text>
+                        <Text style={styles.retroTitle}>Fecha de lectura</Text>
                         <Text style={styles.retroSubtitle}>
-                          Si leíste antes de dormir anoche, elige Ayer
+                          Si leíste anoche antes de dormir, elige Ayer
                         </Text>
                       </View>
                       <View style={styles.retroPillsRow}>
@@ -596,7 +596,7 @@ export const ReadingTimerModal: React.FC<ReadingTimerModalProps> = ({
                         variant="ghost"
                         size="md"
                         leftIcon={<AlertTriangle size={16} color={colors.light.accent} />}
-                        title="Simular olvido de pausa (Probar Outlier Guard)"
+                        title="Simular olvido de pausa (Ajustar tiempo)"
                       />
                     </View>
                   </View>

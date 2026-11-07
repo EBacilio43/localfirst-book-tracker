@@ -583,7 +583,7 @@ export function ReadingStatusModal({
               <View style={styles.sectionContainer}>
                 <View style={[styles.infoBox, styles.infoBoxDanger]}>
                   <Text style={[styles.infoBoxTitle, styles.infoBoxTitleDanger]}>
-                    Abandono de lectura (DNF)
+                    Dejar de leer este libro
                   </Text>
                   <Text style={styles.infoBoxText}>
                     No todos los libros son para nosotros en este momento. Al marcar
@@ -678,7 +678,7 @@ export function ReadingStatusModal({
                 </View>
 
                 <SafeButton
-                  title="Confirmar abandono (DNF)"
+                  title="Confirmar abandono de lectura"
                   variant="danger"
                   size="lg"
                   onPress={() =>
