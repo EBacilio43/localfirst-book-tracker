@@ -35,6 +35,7 @@ import { Shelf } from '@/db/schema/shelves';
 import { ReadingLog } from '@/db/schema/readingLogs';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
+import { BookDetailSkeleton } from '@/shared/components/Skeleton';
 import { HalfStarRating } from '@/features/reading-tracker/components/HalfStarRating';
 import { ReadingStatusModal } from '@/features/reading-tracker/components/ReadingStatusModal';
 import {
@@ -329,8 +330,22 @@ export default function BookDetailScreen() {
 
   if (isLoading) {
     return (
-      <View style={[styles.centerContainer, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color={colors.light.primary} />
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.topBar}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={styles.iconButton}
+          >
+            <ArrowLeft size={22} color={colors.light.text} />
+          </Pressable>
+        </View>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <BookDetailSkeleton />
+        </ScrollView>
       </View>
     );
   }

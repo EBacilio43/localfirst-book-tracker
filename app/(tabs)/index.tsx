@@ -51,6 +51,7 @@ import {
 } from '@/features/shelves/components/ShelvesManagerModal';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
+import { LibraryGridSkeleton } from '@/shared/components/Skeleton';
 
 type FilterType =
   | 'TODOS'
@@ -407,8 +408,10 @@ export default function LibraryScreen() {
           />
         }
       >
-        {/* ESTADO VACÍO GENERAL SI NO HAY LIBROS PROPIOS */}
-        {ownedBooks.length === 0 &&
+        {/* SKELETON DE CARGA INICIAL */}
+        {isLoading ? (
+          <LibraryGridSkeleton count={6} />
+        ) : ownedBooks.length === 0 &&
         !isLoading &&
         activeFilter !== 'WISHLIST' ? (
           <View style={styles.emptyContainer}>

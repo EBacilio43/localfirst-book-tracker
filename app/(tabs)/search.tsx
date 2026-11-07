@@ -16,6 +16,7 @@ import { BooksRepository } from '@/db/repositories/booksRepository';
 import { Book } from '@/db/schema/books';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
+import { SearchListSkeleton } from '@/shared/components/Skeleton';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -147,8 +148,10 @@ export default function SearchScreen() {
         </View>
       ) : null}
 
-      {/* Resultados o Estados Vacíos */}
-      {query.trim().length === 0 ? (
+      {/* Resultados, Skeleton de Carga o Estados Vacíos */}
+      {isSearching && results.length === 0 ? (
+        <SearchListSkeleton count={5} />
+      ) : query.trim().length === 0 ? (
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconCircle}>
             <Search size={36} color={colors.light.primary} strokeWidth={1.5} />
