@@ -97,9 +97,13 @@ Para evitar registros duplicados, condiciones de carrera o llamadas dobles a las
 2. **Skeletons Obligatorios en Pantallas de Carga (`Skeleton` / `Shimmer`):**
    - Queda prohibido mostrar pantallas en blanco o depender únicamente de un `ActivityIndicator` genérico durante la carga inicial de pantallas, cuadrículas de portadas, estanterías, listas de búsqueda o fichas de detalle.
    - Todas las pantallas deben utilizar componentes `Skeleton` con animación de pulso suave (`src/shared/components/Skeleton.tsx`) que respeten la geometría exacta del contenido final (proporción `2:3` de portadas, píldoras de estado y bloques de metadatos) para eliminar saltos bruscos de interfaz (*CLS / Layout Shift*).
-3. **Deduplicación en el Escáner de Cámara (Modo Individual y Ráfaga):**
+3. **Debounce Obligatorio en Búsquedas (`useDebouncedValue`):**
+   - Toda barra de búsqueda o filtro por texto debe implementar *debounce* mediante el hook estándar `useDebouncedValue` (`src/shared/hooks/useDebouncedValue.ts`) antes de ejecutar consultas:
+     - **Búsquedas locales (`SQLite FTS5` / estanterías / biblioteca):** ventana de `250ms` a `300ms` (con limpieza inmediata a `0ms` al vaciar el campo) para evitar bloquear el hilo de UI mientras el usuario escribe.
+     - **Búsquedas remotas o con IA (Google Books, Open Library, Detective Literario Gemini):** ventana de `400ms` a `500ms` más control de cancelación contra respuestas fuera de orden para proteger la cuota de APIs.
+4. **Deduplicación en el Escáner de Cámara (Modo Individual y Ráfaga):**
    - La cámara lee códigos de barras a 30-60 fps. El módulo `scanner` debe mantener un `Map<string, number>` de códigos recién leídos con una ventana de enfriamiento (*cooldown*) de **`3,000 ms` por ISBN** y verificar contra SQLite antes de agregar un libro a la cola o consultar las APIs.
-4. **Idempotencia en Base de Datos (SQLite) y Reglas Técnicas Críticas:**
+5. **Idempotencia en Base de Datos (SQLite) y Reglas Técnicas Críticas:**
    - Las operaciones de creación críticas (guardar libro, registrar sesión de cronómetro, crear meta mensual/anual) deben ejecutarse dentro de transacciones y permitir múltiples ediciones de un mismo ISBN solo tras confirmación explícita del usuario.
    - **Agrupación por Sagas (`series_name` + `series_index`):** La biblioteca soporta agrupar libros por saga en orden numérico (`#1`, `#1.5`, `#2`) mostrando el progreso de la saga, y la Ruleta TBR jamás debe sugerir un tomo posterior si existe un tomo previo sin leer.
    - **Cronómetro por Timestamps y Rachas en Zona Horaria Local:** El cronómetro debe persistir `started_at_epoch_ms` (nunca depender de `setInterval` en memoria al apagar la pantalla), y cada sesión debe registrar `local_date ('YYYY-MM-DD')` en el huso horario local del dispositivo.
