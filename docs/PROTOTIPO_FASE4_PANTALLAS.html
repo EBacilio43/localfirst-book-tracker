@@ -276,14 +276,14 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
   <div class="chrome">
     <div class="chrome-top">
       <span class="tag">BaciBooks · Fase 4 (v0.4.0)</span>
-      <span>FTS5 · Gemini IA · ML Kit OCR · Préstamos</span>
+      <span>Búsqueda en Biblioteca · Detective Literario · Citas · Préstamos</span>
     </div>
 
     <!-- Selector de las 4 pantallas de Fase 4 -->
     <div class="tg-grid four">
-      <label for="scr-fts" class="tg">1. FTS5 Local</label>
+      <label for="scr-fts" class="tg">1. Mi Biblioteca</label>
       <label for="scr-ai" class="tg">2. Detective IA</label>
-      <label for="scr-ocr" class="tg">3. OCR y Citas</label>
+      <label for="scr-ocr" class="tg">3. Citas y Notas</label>
       <label for="scr-loans" class="tg">4. Préstamos</label>
     </div>
 
@@ -301,11 +301,11 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
 
     <!-- Sub-controles contextuales -->
     <div class="subpanel sp-fts">
-      <div class="subpanel-title"><span>Estado de Búsqueda FTS5:</span><span>remove_diacritics 2 · 280ms</span></div>
+      <div class="subpanel-title"><span>Búsqueda en Biblioteca:</span><span>Con o sin acentos</span></div>
       <div class="tg-grid three">
         <label for="fts-all" class="tg">Todo (Sin Tildes)</label>
         <label for="fts-deep" class="tg">Citas y Personajes</label>
-        <label for="fts-skel" class="tg">Skeleton + Índice</label>
+        <label for="fts-skel" class="tg">Cargando</label>
       </div>
     </div>
 
@@ -344,15 +344,15 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
     <!-- =================================================================== -->
     <div id="s-fts" class="scr">
       <div>
-        <div class="sbar"><span class="mono">09:41</span><span>SQLite FTS5 · 0ms Red</span></div>
+        <div class="sbar"><span class="mono">09:41</span><span>Tu Biblioteca · Sin conexión</span></div>
         <div class="hdr">
           <div>
-            <div class="muted">Búsqueda Híbrida · Nivel 1</div>
+            <div class="muted">Explorador de lecturas</div>
             <h1 class="h1 serif">En Mi Biblioteca</h1>
           </div>
           <label for="scr-ai" class="pill acc" style="cursor:pointer">
             <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
-            Ir al Detective IA
+            Ir al Detective Literario
           </label>
         </div>
 
@@ -360,7 +360,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
           <div class="seg seg-fts">
             <label for="fts-all">Coincidencias</label>
             <label for="fts-deep">Citas / Glosario</label>
-            <label for="fts-skel">Skeleton / FTS5</label>
+            <label for="fts-skel">Cargando</label>
           </div>
         </div>
       </div>
@@ -369,17 +369,17 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
       <div class="fts-pane fts-pane-all">
         <div class="search-box">
           <svg class="lucide" style="color:var(--pri)" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-          <input type="text" id="fts-query-input" class="search-input" value="bene gesserit miedo" oninput="simulateFtsFilter(this.value)" placeholder="Título, autor, cita OCR, personaje o nota..." />
-          <span class="pill soft mono" style="font-size:12px;padding:2px 6px">280ms</span>
+          <input type="text" id="fts-query-input" class="search-input" value="bene gesserit miedo" oninput="simulateFtsFilter(this.value)" placeholder="Título, autor, frase subrayada, personaje o nota..." />
+          <span class="pill soft" style="font-size:12px;padding:2px 6px">Al instante</span>
         </div>
 
-        <!-- Filtros rápidos de alcance FTS5 -->
+        <!-- Filtros rápidos de alcance -->
         <div class="scope-bar hscroll">
           <span class="scope-chip on">Todo (4)</span>
           <span class="scope-chip">Libros (1)</span>
-          <span class="scope-chip">Citas OCR (2)</span>
+          <span class="scope-chip">Citas (2)</span>
           <span class="scope-chip">Personajes (1)</span>
-          <span class="scope-chip">Notas Pausa (0)</span>
+          <span class="scope-chip">Notas (0)</span>
         </div>
 
         <!-- Resultado 1: Libro + Sinopsis + Cita OCR coincidente -->
@@ -397,8 +397,8 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
 
           <div class="snippet-box">
             <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--acc);margin-bottom:2px">
-              <span>CITA OCR · Pág. 19 (Cap. 1)</span>
-              <span>Sin tildes: Activo</span>
+              <span>CITA GUARDADA · Pág. 19 (Cap. 1)</span>
+              <span>Con o sin acentos</span>
             </div>
             <p class="serif" style="font-style:italic">
               "No debo tener <mark class="hl">miedo</mark>. El <mark class="hl">miedo</mark> es el asesino de la mente. Letanía de la hermandad <mark class="hl">Bene Gesserit</mark>."
@@ -419,8 +419,8 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         <!-- Resultado 2: Prueba de búsqueda sin tildes ("garcia marquez / ficcion") -->
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <span style="font-size:12px;font-weight:700">Prueba interactiva de diacríticos (`remove_diacritics 2`)</span>
-            <span class="pill ok">Offline</span>
+            <span style="font-size:12px;font-weight:700">Búsqueda insensible a acentos</span>
+            <span class="pill ok">Sin conexión</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap">
             <button type="button" class="btn-inline" onclick="setFtsDemo('garcia marquez soledad')">"garcia marquez"</button>
@@ -428,7 +428,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
             <button type="button" class="btn-inline" onclick="setFtsDemo('bene gesserit miedo')">"bene gesserit"</button>
           </div>
           <div class="muted" id="fts-demo-feedback" style="margin-top:6px">
-            El tokenizador unicode61 ignora tildes y mayúsculas en títulos, autores, notas y citas OCR.
+            Encuentra coincidencias en títulos, autores, notas y citas con o sin tildes.
           </div>
         </div>
       </div>
@@ -457,15 +457,15 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
             "El emperador Shaddam IV comprendió demasiado tarde que el planeta desértico había forjado un ejército invencible bajo el mando de Muad'Dib."
           </p>
           <div class="muted" style="margin-top:6px">
-            Protección activa: las coincidencias FTS5 marcadas con `is_spoiler = true` mantienen el desenfoque en resultados de búsqueda.
+            Protección activa: los resultados con spoilers mantienen el desenfoque en la vista previa.
           </div>
         </div>
       </div>
 
-      <!-- SUB-VISTA 1C: SKELETON GEOMÉTRICO Y ARQUITECTURA DE ÍNDICE UNIFICADO -->
+      <!-- SUB-VISTA 1C: SKELETON GEOMÉTRICO Y CARGA SUAVE -->
       <div class="fts-pane fts-pane-skel">
         <div class="card">
-          <div class="lbl" style="margin-top:0"><span>Skeleton durante re-indexado / consulta (`SearchListSkeleton`)</span><span>Sin CLS</span></div>
+          <div class="lbl" style="margin-top:0"><span>Animación de carga suave</span><span>Sin saltos</span></div>
           <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
             <div class="skel" style="width:52px;height:78px;border-radius:7px;flex-shrink:0"></div>
             <div style="flex:1">
@@ -477,11 +477,11 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         </div>
 
         <div class="card">
-          <div class="lbl" style="margin-top:0"><span>Arquitectura FTS5 Fase 4 (`search_index_fts`)</span><span class="mono">SQLite</span></div>
+          <div class="lbl" style="margin-top:0"><span>Búsqueda profunda en tu teléfono</span><span class="mono">Instantánea</span></div>
           <div class="card-sub" style="margin-top:4px;font-size:12px">
-            <div>1. <b>Tabla virtual `books_fts` + `quotes_fts`:</b> sincronizada con triggers `AFTER INSERT / UPDATE / DELETE`.</div>
-            <div style="margin-top:4px">2. <b>Campos indexados:</b> `title`, `authors`, `publisher`, `series_name`, `description`, `pause_or_dnf_note`, `review`, `quote_content`, `personal_note`.</div>
-            <div style="margin-top:4px">3. <b>Debounce reactivo:</b> `280ms` al escribir y `0ms` al limpiar el input.</div>
+            <div>1. <b>Búsqueda unificada:</b> encuentra libros, frases y personajes en un solo lugar.</div>
+            <div style="margin-top:4px">2. <b>Campos analizados:</b> título, autores, editorial, sinopsis, notas personales y citas.</div>
+            <div style="margin-top:4px">3. <b>Respuesta fluida:</b> busca mientras escribes sin pausar la pantalla.</div>
           </div>
         </div>
       </div>
@@ -491,7 +491,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         <div class="tabs">
           <label for="scr-fts" class="tab on">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            FTS5 Local
+            Mi Biblioteca
           </label>
           <label for="scr-ai" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
@@ -499,7 +499,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
           </label>
           <label for="scr-ocr" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            OCR y Citas
+            Citas y Notas
           </label>
           <label for="scr-loans" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
@@ -514,11 +514,11 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
     <!-- =================================================================== -->
     <div id="s-ai" class="scr">
       <div>
-        <div class="sbar"><span class="mono">09:41</span><span>Gemini 2.5 Flash · Validado con Zod</span></div>
+        <div class="sbar"><span class="mono">09:41</span><span>Detective Literario</span></div>
         <div class="hdr">
           <div>
-            <div class="muted">Búsqueda Híbrida · Nivel 2</div>
-            <h1 class="h1 serif">Detective Literario IA</h1>
+            <div class="muted">Encuentra libros por recuerdos</div>
+            <h1 class="h1 serif">Detective Literario</h1>
           </div>
           <span class="pill gold">Sin Spoilers</span>
         </div>
@@ -539,7 +539,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
               <svg class="lucide lucide-sm" style="color:var(--acc)" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
               Recuerdo de trama, escena o frase aproximada
             </span>
-            <span class="muted mono">450ms debounce</span>
+            <span class="muted">Por recuerdos</span>
           </div>
           <textarea class="ai-textarea" rows="2" readonly>Novela donde un pueblo entero pierde la memoria por la peste del insomnio y ponen letreros a las cosas para recordar cómo se llaman y que Dios existe.</textarea>
         </div>
@@ -643,7 +643,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         <div class="tabs">
           <label for="scr-fts" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            FTS5 Local
+            Mi Biblioteca
           </label>
           <label for="scr-ai" class="tab on">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
@@ -651,7 +651,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
           </label>
           <label for="scr-ocr" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            OCR y Citas
+            Citas y Notas
           </label>
           <label for="scr-loans" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
@@ -666,31 +666,31 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
     <!-- =================================================================== -->
     <div id="s-ocr" class="scr">
       <div>
-        <div class="sbar"><span class="mono">09:41</span><span>ML Kit On-Device · $0 USD</span></div>
+        <div class="sbar"><span class="mono">09:41</span><span>Escáner de citas</span></div>
         <div class="hdr">
           <div>
             <div class="muted">Dune · Frank Herbert</div>
-            <h1 class="h1 serif">Citas, OCR y Glosario</h1>
+            <h1 class="h1 serif">Citas y Glosario</h1>
           </div>
-          <span class="pill">Adapter Expo Go</span>
+          <span class="pill">Cámara</span>
         </div>
 
         <div style="padding:0 20px 10px">
           <div class="seg seg-ocr">
-            <label for="ocr-scan">Escáner OCR</label>
+            <label for="ocr-scan">Escanear página</label>
             <label for="ocr-glossary">Glosario / Citas</label>
-            <label for="ocr-card">Postal PNG</label>
+            <label for="ocr-card">Postal</label>
           </div>
         </div>
       </div>
 
-      <!-- SUB-VISTA 3A: ESCÁNER OCR ON-DEVICE Y SANITIZADOR DE GUIONES -->
+      <!-- SUB-VISTA 3A: ESCÁNER DE PÁGINAS Y SANITIZADOR DE GUIONES -->
       <div class="ocr-pane ocr-pane-scan">
         <div class="cam-frame">
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
             <span style="display:inline-flex;align-items:center;gap:5px;font-weight:700">
               <svg class="lucide lucide-sm" style="color:#E9A23B" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-              Recorte de Página Impresa (EXIF Normalizado)
+              Recorte de Página Impresa
             </span>
             <span class="pill soft" style="background:#2E2A27;color:#FAF7F2;border-color:#4E4740">Linterna Off</span>
           </div>
@@ -848,7 +848,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         <div class="tabs">
           <label for="scr-fts" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            FTS5 Local
+            Mi Biblioteca
           </label>
           <label for="scr-ai" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
@@ -856,7 +856,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
           </label>
           <label for="scr-ocr" class="tab on">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            OCR y Citas
+            Citas y Notas
           </label>
           <label for="scr-loans" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
@@ -1014,7 +1014,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
             <span class="muted mono">Leído al 100%</span>
           </div>
           <div style="font-size:14px;font-weight:700;margin-top:5px">Ficciones · Jorge Luis Borges</div>
-          <div class="muted">Origen: <b>Biblioteca Central (`BORROWED_IN`)</b> · 5 citas OCR conservadas</div>
+          <div class="muted">Origen: <b>Biblioteca Central (Préstamo)</b> · 5 citas conservadas</div>
         </div>
       </div>
 
@@ -1023,7 +1023,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
         <div class="tabs">
           <label for="scr-fts" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            FTS5 Local
+            Mi Biblioteca
           </label>
           <label for="scr-ai" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
@@ -1031,7 +1031,7 @@ mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-rad
           </label>
           <label for="scr-ocr" class="tab">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-            OCR y Citas
+            Citas y Notas
           </label>
           <label for="scr-loans" class="tab on">
             <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>

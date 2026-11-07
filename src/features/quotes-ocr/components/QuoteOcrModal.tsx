@@ -169,12 +169,12 @@ export const QuoteOcrModal: React.FC<QuoteOcrModalProps> = ({
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
           >
-            {/* Botón de acción OCR */}
+            {/* Botón de acción para escanear página */}
             <View style={styles.ocrActionCard}>
               <View style={styles.ocrInfoCol}>
-                <Text style={styles.ocrCardTitle}>Reconocimiento OCR On-Device</Text>
+                <Text style={styles.ocrCardTitle}>Escanear texto de página</Text>
                 <Text style={styles.ocrCardSubtitle}>
-                  Escanea páginas impresas y une guiones de corte automáticamente.
+                  Fotografía una página de tu libro y uniremos los renglones automáticamente.
                 </Text>
               </View>
               <SafeButton

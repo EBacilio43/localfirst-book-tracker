@@ -674,14 +674,14 @@ export default function StatsAndGoalsScreen() {
             ================================================================= */}
         {activeTab === 'FORECAST' && (
           <View>
-            {/* Aviso de Arranque en Frío (Cold Start) si hay 0 sesiones con cronómetro */}
+            {/* Aviso de ritmo inicial si hay 0 sesiones con cronómetro */}
             {velocity.isColdStart && (
               <View style={styles.coldStartCard}>
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.rowCenter}>
                     <Sparkles size={16} color={colors.light.gold} />
                     <Text style={styles.coldStartTitle}>
-                      Modo Arranque en Frío (Cold Start)
+                      Estimación inicial de ritmo
                     </Text>
                   </View>
                   <View style={styles.badgeGold}>
@@ -689,9 +689,8 @@ export default function StatsAndGoalsScreen() {
                   </View>
                 </View>
                 <Text style={styles.cardMuted}>
-                  Usando base calibrada de 25 págs/hora y 20 págs/día para evitar
-                  divisiones entre cero. Registra tu primera sesión con el cronómetro
-                  para personalizar tu velocidad real.
+                  Calculando con un ritmo estimado de 25 páginas por hora y 20 páginas al día.
+                  Registra tu primera sesión con el cronómetro para calcular tu velocidad real.
                 </Text>
               </View>
             )}

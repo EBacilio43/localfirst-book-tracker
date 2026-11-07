@@ -907,8 +907,9 @@ export default function SearchScreen() {
               ))}
 
               <Text style={styles.aiDisclaimer}>
-                Las sugerencias de Gemini 2.5 Flash son orientativas y se
-                validan con Zod frente a tu biblioteca local y el catálogo.
+                Las sugerencias del Detective Literario son orientativas y se
+                confirman con los datos de tu biblioteca y el catálogo de
+                ediciones.
               </Text>
             </>
           ) : (
