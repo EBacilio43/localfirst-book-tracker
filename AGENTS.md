@@ -153,3 +153,14 @@ Por definición del proyecto, todos los mensajes de commit se redactarán **en e
 
 ### Seguridad en GitHub
 - **NUNCA** subir archivos `.env`, llaves privadas (`.jks`, `.p8`) ni credenciales al repositorio. Mantener `.env.example` documentado.
+
+---
+
+## 7. Regla Estricta: Prohibición Total de Emojis
+
+Queda estrictamente prohibido el uso de emojis en cualquier parte del proyecto BaciBooks, sin excepciones:
+1. **En el Código Fuente y UI:** Prohibido usar emojis en textos visibles de la interfaz, botones, toasts, alertas, logs de consola, comentarios de código o nombres de variables. La iconografía de la aplicación se gestiona exclusivamente mediante iconos vectoriales de la librería oficial (`lucide-react-native`).
+2. **En la Comunicación y Respuestas:** El asistente y los desarrolladores jamás deben incluir emojis en los mensajes del chat, explicaciones técnicas, resúmenes de estado ni revisiones de código.
+3. **En Commits y Control de Versiones:** Prohibido incluir emojis en los títulos o descripciones de los commits de Git (`git commit`) y en las etiquetas de versión (`git tag`).
+4. **En Documentación:** Prohibido utilizar emojis en archivos Markdown (`README.md`, `PLAN_MAESTRO_BACIBOOKS.md`, especificaciones, etc.). Toda la documentación debe mantener un tono técnico, formal y sobrio.
+
