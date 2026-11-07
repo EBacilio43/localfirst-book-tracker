@@ -1,6 +1,11 @@
-import { eq, desc, asc, and, like, or, isNotNull } from 'drizzle-orm';
+import { eq, ne, desc, asc, and, like, or, isNotNull } from 'drizzle-orm';
 import { db, rawDb } from '../client';
 import { books, Book, NewBook } from '../schema/books';
+import { readingSessions } from '../schema/readingSessions';
+import {
+  calculateAutomaticPercentage,
+  resolveReadingLocalDate,
+} from '../../features/reading-tracker/store/readerPreferencesStore';
 
 export interface BookFilters {
   modality?: 'PHYSICAL' | 'DIGITAL';
@@ -13,6 +18,49 @@ export interface SeriesGroup {
   seriesName: string;
   totalBooks: number;
   books: Book[];
+}
+
+export interface UpdateReadingProgressParams {
+  bookId: string;
+  currentUnit: number;
+  totalUnits?: number;
+  progressMode?: 'PAGES' | 'CHAPTERS';
+  when?: 'TODAY' | 'YESTERDAY';
+}
+
+export interface UpdateReadingProgressResult {
+  book: Book | null;
+  percentage: number;
+  localDate: string;
+}
+
+export interface PauseOrAbandonBookParams {
+  bookId: string;
+  status: 'EN_ESPERA' | 'ABANDONADO';
+  pauseOrDnfNote?: string | null;
+  isSpoiler?: boolean;
+  stoppedAtUnit?: number;
+}
+
+export interface ConvertWishlistToOwnedParams {
+  bookId: string;
+  modality?: 'PHYSICAL' | 'DIGITAL';
+  shelfId?: string | null;
+  format?: Book['format'];
+}
+
+function generateSessionId(): string {
+  const timestamp = Date.now().toString(36);
+  const randomPart = Math.random().toString(36).substring(2, 10);
+  return `sess_${timestamp}_${randomPart}`;
+}
+
+function normalizeTitleForComparison(title: string): string {
+  return title
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
 }
 
 export class BooksRepository {
@@ -167,5 +215,165 @@ export class BooksRepository {
         )
       )
       .limit(30);
+  }
+
+  /**
+   * Actualiza el progreso de lectura calculando automaticamente el porcentaje.
+   * Si se avanzaron paginas, registra la sesion con la fecha local correspondiente (HOY o AYER).
+   * Asegura el cambio a LEYENDO o LEIDO si alcanza el 100%.
+   */
+  static async updateReadingProgress(
+    params: UpdateReadingProgressParams
+  ): Promise<UpdateReadingProgressResult> {
+    const book = await BooksRepository.getById(params.bookId);
+    const localDate = resolveReadingLocalDate(params.when ?? 'TODAY');
+
+    if (!book) {
+      return {
+        book: null,
+        percentage: 0,
+        localDate,
+      };
+    }
+
+    const effectiveTotal =
+      params.totalUnits !== undefined && params.totalUnits > 0
+        ? params.totalUnits
+        : book.pageCount;
+
+    const percentage = calculateAutomaticPercentage(params.currentUnit, effectiveTotal);
+    const newStatus = percentage >= 100 ? 'LEIDO' : 'LEYENDO';
+    const previousUnit = book.currentPage ?? 0;
+    const unitsRead = params.currentUnit > previousUnit ? params.currentUnit - previousUnit : 0;
+
+    if (unitsRead > 0) {
+      const now = Date.now();
+      await db.insert(readingSessions).values({
+        id: generateSessionId(),
+        bookId: book.id,
+        startPage: previousUnit,
+        endPage: params.currentUnit,
+        pagesRead: unitsRead,
+        durationSeconds: 0,
+        startedAtEpochMs: now,
+        localDate,
+        createdAt: now,
+      });
+    }
+
+    const updated = await db
+      .update(books)
+      .set({
+        currentPage: params.currentUnit,
+        currentPercentage: percentage,
+        progressMode: params.progressMode ?? book.progressMode,
+        pageCount: effectiveTotal,
+        currentStatus: newStatus,
+        updatedAt: Date.now(),
+      })
+      .where(eq(books.id, params.bookId))
+      .returning();
+
+    return {
+      book: updated[0] || null,
+      percentage,
+      localDate,
+    };
+  }
+
+  /**
+   * Pausa o abandona un libro, preservando las paginas avanzadas y recalculando el porcentaje.
+   */
+  static async pauseOrAbandonBook(params: PauseOrAbandonBookParams): Promise<Book | null> {
+    const book = await BooksRepository.getById(params.bookId);
+    if (!book) return null;
+
+    let currentPage = book.currentPage;
+    let currentPercentage = book.currentPercentage;
+
+    if (params.stoppedAtUnit !== undefined) {
+      currentPage = params.stoppedAtUnit;
+      currentPercentage = calculateAutomaticPercentage(currentPage, book.pageCount);
+    }
+
+    const pauseOrDnfNote =
+      params.pauseOrDnfNote !== undefined ? params.pauseOrDnfNote : book.pauseOrDnfNote;
+    const isSpoiler = params.isSpoiler !== undefined ? params.isSpoiler : book.isSpoiler;
+
+    const updated = await db
+      .update(books)
+      .set({
+        currentStatus: params.status,
+        currentPage,
+        currentPercentage,
+        pauseOrDnfNote,
+        isSpoiler,
+        updatedAt: Date.now(),
+      })
+      .where(eq(books.id, params.bookId))
+      .returning();
+
+    return updated[0] || null;
+  }
+
+  /**
+   * Convierte un libro de la lista de deseos a libro en propiedad (OWNED),
+   * asignando su estanteria si es fisico o su formato si es digital.
+   */
+  static async convertWishlistToOwned(
+    params: ConvertWishlistToOwnedParams
+  ): Promise<Book | null> {
+    const book = await BooksRepository.getById(params.bookId);
+    if (!book) return null;
+
+    const modality = params.modality ?? book.modality;
+    const isPhysical = modality === 'PHYSICAL';
+
+    const shelfId = isPhysical
+      ? params.shelfId !== undefined
+        ? params.shelfId
+        : book.shelfId
+      : null;
+
+    const format = params.format !== undefined ? params.format : book.format;
+
+    const updated = await db
+      .update(books)
+      .set({
+        ownership: 'OWNED',
+        currentStatus: 'POR_LEER',
+        modality,
+        shelfId,
+        format,
+        updatedAt: Date.now(),
+      })
+      .where(eq(books.id, params.bookId))
+      .returning();
+
+    return updated[0] || null;
+  }
+
+  /**
+   * Busca todas las ediciones o ejemplares registrados en la biblioteca que compartan
+   * el mismo ISBN-13 o el mismo titulo normalizado (excluyendo lista de deseos).
+   */
+  static async getMultipleEditions(bookId: string): Promise<Book[]> {
+    const targetBook = await BooksRepository.getById(bookId);
+    if (!targetBook) return [];
+
+    const candidates = await db
+      .select()
+      .from(books)
+      .where(ne(books.ownership, 'WISHLIST'));
+
+    const targetIsbn = targetBook.isbn13?.trim();
+    const targetTitle = normalizeTitleForComparison(targetBook.title);
+
+    return candidates.filter((candidate) => {
+      if (targetIsbn && candidate.isbn13 && candidate.isbn13.trim() === targetIsbn) {
+        return true;
+      }
+      return normalizeTitleForComparison(candidate.title) === targetTitle;
+    });
   }
 }
