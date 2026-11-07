@@ -152,6 +152,91 @@ export const SearchListSkeleton: React.FC<{ count?: number }> = ({ count = 5 }) 
   );
 };
 
+/**
+ * Skeleton para la carga inicial del panel de Metas, Predicciones y Estadísticas.
+ */
+export const StatsDashboardSkeleton: React.FC = () => {
+  return (
+    <View style={styles.statsContainer} testID="stats-dashboard-skeleton">
+      {/* Cabecera y badge superior */}
+      <View style={styles.statsHeaderRow}>
+        <View style={styles.statsHeaderCol}>
+          <SkeletonBox width={160} height={24} borderRadius={6} />
+          <SkeletonBox width={210} height={14} borderRadius={5} style={styles.mt6} />
+        </View>
+        <SkeletonBox width={90} height={28} borderRadius={999} />
+      </View>
+
+      {/* Selector de pestañas / segmentos */}
+      <SkeletonBox width="100%" height={40} borderRadius={12} style={styles.mt8} />
+
+      {/* Tarjeta principal de progreso de meta anual / mensual */}
+      <View style={styles.cardSkeleton}>
+        <View style={styles.rowBetween}>
+          <SkeletonBox width={150} height={18} borderRadius={6} />
+          <SkeletonBox width={85} height={22} borderRadius={999} />
+        </View>
+        <SkeletonBox width="100%" height={10} borderRadius={999} style={styles.mt12} />
+        <View style={styles.kpiGridSkeleton}>
+          <View style={styles.kpiItemSkeleton}>
+            <SkeletonBox width={72} height={12} borderRadius={4} />
+            <SkeletonBox width={64} height={20} borderRadius={6} style={styles.mt6} />
+            <SkeletonBox width={96} height={12} borderRadius={4} style={styles.mt6} />
+          </View>
+          <View style={styles.kpiItemSkeleton}>
+            <SkeletonBox width={72} height={12} borderRadius={4} />
+            <SkeletonBox width={64} height={20} borderRadius={6} style={styles.mt6} />
+            <SkeletonBox width={96} height={12} borderRadius={4} style={styles.mt6} />
+          </View>
+        </View>
+      </View>
+
+      {/* Tira de Racha, Récord y Escudo */}
+      <View style={styles.streakStripSkeleton}>
+        <View style={styles.streakBadgeSkeleton}>
+          <SkeletonBox width={32} height={32} borderRadius={10} />
+          <View style={styles.searchInfoCol}>
+            <SkeletonBox width={34} height={16} borderRadius={4} />
+            <SkeletonBox width={46} height={12} borderRadius={4} style={styles.mt6} />
+          </View>
+        </View>
+        <View style={styles.streakBadgeSkeleton}>
+          <SkeletonBox width={32} height={32} borderRadius={10} />
+          <View style={styles.searchInfoCol}>
+            <SkeletonBox width={34} height={16} borderRadius={4} />
+            <SkeletonBox width={46} height={12} borderRadius={4} style={styles.mt6} />
+          </View>
+        </View>
+        <View style={styles.streakBadgeSkeleton}>
+          <SkeletonBox width={32} height={32} borderRadius={10} />
+          <View style={styles.searchInfoCol}>
+            <SkeletonBox width={34} height={16} borderRadius={4} />
+            <SkeletonBox width={46} height={12} borderRadius={4} style={styles.mt6} />
+          </View>
+        </View>
+      </View>
+
+      {/* Cuadrícula de actividad / Mapa de calor */}
+      <View style={styles.cardSkeleton}>
+        <View style={styles.rowBetween}>
+          <SkeletonBox width={140} height={16} borderRadius={6} />
+          <SkeletonBox width={80} height={16} borderRadius={6} />
+        </View>
+        <View style={styles.heatmapSkeleton}>
+          {Array.from({ length: 4 }).map((_, rIdx) => (
+            <View key={rIdx} style={styles.heatmapRowSkeleton}>
+              <SkeletonBox width={56} height={26} borderRadius={6} />
+              {Array.from({ length: 7 }).map((_, cIdx) => (
+                <SkeletonBox key={cIdx} width={28} height={28} borderRadius={6} />
+              ))}
+            </View>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   baseBox: {
     backgroundColor: colors.light.border,
@@ -212,6 +297,59 @@ const styles = StyleSheet.create({
   },
   mt16: {
     marginTop: 16,
+  },
+  statsContainer: {
+    padding: 16,
+    gap: 14,
+  },
+  statsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  statsHeaderCol: {
+    flex: 1,
+  },
+  rowBetween: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  kpiGridSkeleton: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 12,
+  },
+  kpiItemSkeleton: {
+    flex: 1,
+    backgroundColor: colors.light.surfaceAlt,
+    borderRadius: 12,
+    padding: 10,
+  },
+  streakStripSkeleton: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  streakBadgeSkeleton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.light.surface,
+    borderRadius: 14,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+  },
+  heatmapSkeleton: {
+    marginTop: 12,
+    gap: 6,
+  },
+  heatmapRowSkeleton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 4,
   },
 });
 
