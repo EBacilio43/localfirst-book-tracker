@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fase 4 (v0.4.0) — Prototipo Interactivo: Búsqueda Híbrida FTS5 + Detective IA, OCR de Citas / Glosario y Préstamos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+input.st{display:none}
+label{cursor:pointer;user-select:none}
+.wrap{max-width:414px;margin:0 auto}
+.hscroll{scrollbar-width:none;overflow-x:auto}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Iconos Lucide (SVG Vectoriales, Cero Emojis) ---------- */
+.lucide{display:inline-block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;vertical-align:-2px;flex-shrink:0}
+.lucide-tab{width:20px;height:20px;margin-bottom:2px}
+.lucide-lg{width:22px;height:22px}
+.lucide-sm{width:13px;height:13px;vertical-align:-1px}
+
+/* ---------- Controles Superiores del Prototipo ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.three{grid-template-columns:repeat(3,1fr)}
+.tg-grid.four{grid-template-columns:repeat(4,1fr)}
+.tg{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:12px;font-weight:600;padding:8px 4px;border-radius:9px;color:#A8A29E;transition:all .15s ease}
+.subpanel{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #2E2A27}
+.subpanel-title{font-size:12px;color:#A8A29E;margin-bottom:4px;display:flex;justify-content:space-between}
+
+/* Activación de pestañas principales del panel superior */
+#scr-fts:checked ~ .wrap .chrome label[for="scr-fts"],
+#scr-ai:checked ~ .wrap .chrome label[for="scr-ai"],
+#scr-ocr:checked ~ .wrap .chrome label[for="scr-ocr"],
+#scr-loans:checked ~ .wrap .chrome label[for="scr-loans"]{background:#B85F30;color:#fff}
+
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+
+#scr-fts:checked ~ .wrap .sp-fts,
+#scr-ai:checked ~ .wrap .sp-ai,
+#scr-ocr:checked ~ .wrap .sp-ocr,
+#scr-loans:checked ~ .wrap .sp-loans{display:block}
+
+#fts-all:checked ~ .wrap .chrome label[for="fts-all"],
+#fts-deep:checked ~ .wrap .chrome label[for="fts-deep"],
+#fts-skel:checked ~ .wrap .chrome label[for="fts-skel"],
+#ai-res:checked ~ .wrap .chrome label[for="ai-res"],
+#ai-empty:checked ~ .wrap .chrome label[for="ai-empty"],
+#ocr-scan:checked ~ .wrap .chrome label[for="ocr-scan"],
+#ocr-glossary:checked ~ .wrap .chrome label[for="ocr-glossary"],
+#ocr-card:checked ~ .wrap .chrome label[for="ocr-card"],
+#ln-active:checked ~ .wrap .chrome label[for="ln-active"],
+#ln-new:checked ~ .wrap .chrome label[for="ln-new"],
+#ln-hist:checked ~ .wrap .chrome label[for="ln-hist"]{background:#3A3530;color:#F3EFE7}
+
+/* ---------- Marco del Teléfono y Tokens de Tema ---------- */
+.phone{
+  --bg:#FAF7F2;
+  --fg:#1C1917;
+  --muted:#6B6560;
+  --surf:#EFEAE1;
+  --card:#FFFDF8;
+  --line:#D8CFC0;
+  --pri:#1E4635;
+  --pri-fg:#FAF7F2;
+  --acc:#B85F30;
+  --gold:#C98A2C;
+  --danger:#C83E32;
+  --ok:#16803C;
+  border-radius:36px;
+  border:5px solid #2E2A27;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.5)
+}
+#thm-night:checked ~ .wrap .phone{
+  --bg:#161412;
+  --fg:#F3EFE7;
+  --muted:#A8A29E;
+  --surf:#221F1C;
+  --card:#2C2824;
+  --line:#3F3933;
+  --pri:#2E6A50;
+  --pri-fg:#FAF7F2;
+  --acc:#C96E3C;
+  --gold:#E9A23B;
+  --danger:#E5674D;
+  --ok:#22C55E;
+}
+
+.scr{display:none;min-height:770px;flex-direction:column;justify-content:space-between}
+#scr-fts:checked ~ .wrap #s-fts,
+#scr-ai:checked ~ .wrap #s-ai,
+#scr-ocr:checked ~ .wrap #s-ocr,
+#scr-loans:checked ~ .wrap #s-loans{display:flex}
+
+.sbar{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 20px 10px}
+.h1{font-size:23px;font-weight:700;letter-spacing:-.3px;line-height:1.15}
+.muted{color:var(--muted);font-size:12px}
+
+/* ---------- Componentes Comunes ---------- */
+.pill{font-size:12px;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--pri);color:var(--pri-fg);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pill.acc{background:var(--acc);color:#fff}
+.pill.soft{background:var(--surf);color:var(--fg);border:1px solid var(--line)}
+.pill.gold{background:rgba(201,138,44,.18);color:var(--fg);border:1px solid var(--gold)}
+.pill.danger{background:rgba(200,62,50,.15);color:var(--danger);border:1px solid var(--danger)}
+.pill.ok{background:rgba(22,128,60,.15);color:var(--ok);border:1px solid var(--ok)}
+
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surf);border-radius:14px;padding:4px;gap:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg label{min-height:36px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:48px;border-radius:15px;background:var(--pri);color:var(--pri-fg);font-size:13px;font-weight:700;border:none;cursor:pointer}
+.cta.acc{background:var(--acc);color:#fff}
+.cta.danger{background:var(--danger);color:#fff}
+.btn2{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:42px;border-radius:13px;background:var(--surf);color:var(--fg);font-size:12px;font-weight:600;margin-top:8px;border:1px solid var(--line);cursor:pointer}
+.btn-inline{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:7px 11px;border-radius:10px;background:var(--surf);color:var(--fg);font-size:12px;font-weight:700;border:1px solid var(--line);cursor:pointer}
+.btn-inline.pri{background:var(--pri);color:var(--pri-fg);border-color:var(--pri)}
+.btn-inline.acc{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:13px;margin-bottom:11px}
+.card-sub{background:var(--surf);border:1px solid var(--line);border-radius:13px;padding:10px 12px;margin-top:8px}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;margin:8px 0 6px;color:var(--fg)}
+.lbl span{font-weight:500;color:var(--muted)}
+
+/* Portadas en miniatura y cintillos de préstamo */
+.cv{aspect-ratio:2/3;border-radius:5px 9px 9px 5px;padding:8px 6px;color:#FAF7F2;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.22),inset 3px 0 0 rgba(255,255,255,.1)}
+.cv-sm{width:52px;flex:0 0 52px}
+.cv-md{width:68px;flex:0 0 68px}
+.cv-lg{width:82px;flex:0 0 82px}
+.ct{font-size:12px;font-weight:700;line-height:1.15}
+.sn{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.6);font-size:12px;font-weight:700;padding:1px 5px;border-radius:5px}
+.loan-ribbon{position:absolute;top:0;left:0;right:0;background:var(--acc);color:#fff;font-size:12px;font-weight:800;text-align:center;padding:2px 3px}
+.loan-ribbon.in{background:var(--pri)}
+.c1{background:linear-gradient(160deg,#9A4B26,#4A200C)}
+.c2{background:linear-gradient(160deg,#85582A,#3E260D)}
+.c6{background:linear-gradient(160deg,#1E4635,#0D2118)}
+.c7{background:linear-gradient(160deg,#4A3B5C,#21192B)}
+.c8{background:linear-gradient(160deg,#234B5E,#0F232E)}
+
+/* Resaltado de coincidencias FTS5 */
+mark.hl{background:rgba(201,138,44,.32);color:var(--fg);padding:0 3px;border-radius:4px;font-weight:700}
+
+/* Animación Skeleton */
+@keyframes pulseSkel{0%,100%{opacity:.55}50%{opacity:.95}}
+.skel{background:var(--line);border-radius:8px;animation:pulseSkel 1.5s ease-in-out infinite}
+
+/* ---------- 1. PANTALLA: BÚSQUEDA PROFUNDA OFFLINE (SQLITE FTS5) ---------- */
+#fts-all:checked ~ .wrap .seg-fts label[for="fts-all"],
+#fts-deep:checked ~ .wrap .seg-fts label[for="fts-deep"],
+#fts-skel:checked ~ .wrap .seg-fts label[for="fts-skel"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.fts-pane{display:none;padding:0 20px;flex:1}
+#fts-all:checked ~ .wrap .fts-pane-all,
+#fts-deep:checked ~ .wrap .fts-pane-deep,
+#fts-skel:checked ~ .wrap .fts-pane-skel{display:block}
+
+.search-box{display:flex;align-items:center;gap:8px;background:var(--card);border:1.5px solid var(--pri);border-radius:15px;padding:9px 12px;margin-bottom:8px}
+.search-input{flex:1;background:transparent;border:none;color:var(--fg);font-size:13px;font-weight:600;outline:none}
+.scope-bar{display:flex;gap:6px;padding-bottom:8px}
+.scope-chip{padding:5px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--surf);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.scope-chip.on{background:var(--pri);color:var(--pri-fg);border-color:var(--pri)}
+
+.snippet-box{background:var(--surf);border-left:3px solid var(--acc);border-radius:6px 11px 11px 6px;padding:8px 10px;margin-top:7px;font-size:12px}
+.snippet-box.char{border-left-color:var(--pri)}
+.blur-spoiler{filter:blur(4.5px);user-select:none;transition:filter .2s ease;cursor:pointer}
+.blur-spoiler.revealed{filter:none}
+
+/* ---------- 2. PANTALLA: DETECTIVE LITERARIO IA (GEMINI 2.5 FLASH) ---------- */
+#ai-res:checked ~ .wrap .seg-ai label[for="ai-res"],
+#ai-empty:checked ~ .wrap .seg-ai label[for="ai-empty"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.ai-pane{display:none;padding:0 20px;flex:1}
+#ai-res:checked ~ .wrap .ai-pane-res,
+#ai-empty:checked ~ .wrap .ai-pane-empty{display:block}
+
+.ai-prompt-card{background:var(--card);border:1.5px solid var(--acc);border-radius:18px;padding:12px;margin-bottom:10px}
+.ai-textarea{width:100%;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:9px 11px;color:var(--fg);font-size:12px;line-height:1.4;resize:none;margin-top:6px;font-family:inherit}
+.match-badge{background:rgba(30,70,53,.15);color:var(--pri);border:1px solid var(--pri);font-weight:800;font-size:12px;padding:3px 8px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.why-box{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:8px;font-size:12px}
+
+/* ---------- 3. PANTALLA: MARCATEXTOS OCR, GLOSARIO Y POSTALES ---------- */
+#ocr-scan:checked ~ .wrap .seg-ocr label[for="ocr-scan"],
+#ocr-glossary:checked ~ .wrap .seg-ocr label[for="ocr-glossary"],
+#ocr-card:checked ~ .wrap .seg-ocr label[for="ocr-card"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.ocr-pane{display:none;padding:0 20px;flex:1}
+#ocr-scan:checked ~ .wrap .ocr-pane-scan,
+#ocr-glossary:checked ~ .wrap .ocr-pane-glossary,
+#ocr-card:checked ~ .wrap .ocr-pane-card{display:block}
+
+.cam-frame{background:linear-gradient(180deg,#1F1D1A 0%,#2D2925 100%);color:#FAF7F2;border-radius:18px;padding:12px;border:1px solid #3F3933;position:relative;margin-bottom:10px}
+.page-crop{background:#F5EFE2;color:#1C1917;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12px;line-height:1.45;border:2px dashed #C98A2C;position:relative}
+.ocr-hl-line{background:rgba(233,162,59,.38);padding:1px 2px;border-radius:3px}
+
+.swatch-row{display:flex;gap:8px;align-items:center}
+.swatch{width:24px;height:24px;border-radius:999px;border:2px solid var(--line);cursor:pointer}
+.swatch.active{outline:2px solid var(--fg);outline-offset:2px}
+
+/* Postal compartible con 3 temas */
+.postcard-canvas{border-radius:22px;padding:18px 16px;margin-bottom:10px;transition:all .2s ease;box-shadow:0 12px 28px rgba(0,0,0,.22);border:1px solid var(--line)}
+.pc-theme-cream{background:linear-gradient(165deg,#FAF6EE 0%,#EFE6D5 100%);color:#1C1917;border-color:#D8CFC0}
+.pc-theme-night{background:linear-gradient(165deg,#181614 0%,#28231E 100%);color:#F3EFE7;border-color:#3F3933}
+.pc-theme-forest{background:linear-gradient(165deg,#1E4635 0%,#10281E 100%);color:#FAF7F2;border-color:#2E6A50}
+
+/* ---------- 4. PANTALLA: CONTROL DE PRÉSTAMOS BIDIRECCIONALES ---------- */
+#ln-active:checked ~ .wrap .seg-ln label[for="ln-active"],
+#ln-new:checked ~ .wrap .seg-ln label[for="ln-new"],
+#ln-hist:checked ~ .wrap .seg-ln label[for="ln-hist"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.ln-pane{display:none;padding:0 20px;flex:1}
+#ln-active:checked ~ .wrap .ln-pane-active,
+#ln-new:checked ~ .wrap .ln-pane-new,
+#ln-hist:checked ~ .wrap .ln-pane-hist{display:block}
+
+/* Selector de dirección en formulario de préstamo */
+#dir-out:checked ~ .wrap .seg-dir label[for="dir-out"]{background:var(--acc);color:#fff}
+#dir-in:checked ~ .wrap .seg-dir label[for="dir-in"]{background:var(--pri);color:var(--pri-fg)}
+
+.due-chip{font-size:12px;font-weight:700;padding:3px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:4px}
+.due-ok{background:rgba(22,128,60,.14);color:var(--ok)}
+.due-warn{background:rgba(201,138,44,.2);color:var(--gold)}
+.due-late{background:rgba(200,62,50,.15);color:var(--danger)}
+
+/* Barra de navegación inferior */
+.dock{padding:10px 14px 14px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:6px;background:var(--surf);border-radius:20px;padding:6px}
+.tab{min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted);border-radius:14px}
+.tab.on{color:var(--fg);background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+</style>
+</head>
+<body>
+
+<!-- Radios principales de pantalla -->
+<input type="radio" name="screen" id="scr-fts" class="st" checked />
+<input type="radio" name="screen" id="scr-ai" class="st" />
+<input type="radio" name="screen" id="scr-ocr" class="st" />
+<input type="radio" name="screen" id="scr-loans" class="st" />
+
+<!-- Tema Día / Noche -->
+<input type="radio" name="theme" id="thm-day" class="st" checked />
+<input type="radio" name="theme" id="thm-night" class="st" />
+
+<!-- Sub-vistas de 1. Búsqueda Profunda FTS5 -->
+<input type="radio" name="ftsview" id="fts-all" class="st" checked />
+<input type="radio" name="ftsview" id="fts-deep" class="st" />
+<input type="radio" name="ftsview" id="fts-skel" class="st" />
+
+<!-- Sub-vistas de 2. Detective Literario IA -->
+<input type="radio" name="aiview" id="ai-res" class="st" checked />
+<input type="radio" name="aiview" id="ai-empty" class="st" />
+
+<!-- Sub-vistas de 3. Escáner OCR, Glosario y Postales -->
+<input type="radio" name="ocrview" id="ocr-scan" class="st" checked />
+<input type="radio" name="ocrview" id="ocr-glossary" class="st" />
+<input type="radio" name="ocrview" id="ocr-card" class="st" />
+
+<!-- Sub-vistas de 4. Préstamos Bidireccionales -->
+<input type="radio" name="lnview" id="ln-active" class="st" checked />
+<input type="radio" name="lnview" id="ln-new" class="st" />
+<input type="radio" name="lnview" id="ln-hist" class="st" />
+
+<!-- Radio de dirección de préstamo (LENT_OUT vs BORROWED_IN) -->
+<input type="radio" name="lndir" id="dir-out" class="st" checked />
+<input type="radio" name="lndir" id="dir-in" class="st" />
+
+<div class="wrap">
+  <!-- PANEL DE CONTROL INTERACTIVO DEL PROTOTIPO -->
+  <div class="chrome">
+    <div class="chrome-top">
+      <span class="tag">BaciBooks · Fase 4 (v0.4.0)</span>
+      <span>Búsqueda en Biblioteca · Detective Literario · Citas · Préstamos</span>
+    </div>
+
+    <!-- Selector de las 4 pantallas de Fase 4 -->
+    <div class="tg-grid four">
+      <label for="scr-fts" class="tg">1. Mi Biblioteca</label>
+      <label for="scr-ai" class="tg">2. Detective IA</label>
+      <label for="scr-ocr" class="tg">3. Citas y Notas</label>
+      <label for="scr-loans" class="tg">4. Préstamos</label>
+    </div>
+
+    <!-- Tema Día / Noche -->
+    <div class="tg-grid" style="margin-top:6px">
+      <label for="thm-day" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>
+        Modo Día (Papel Cálido)
+      </label>
+      <label for="thm-night" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        Modo Noche (Lectura)
+      </label>
+    </div>
+
+    <!-- Sub-controles contextuales -->
+    <div class="subpanel sp-fts">
+      <div class="subpanel-title"><span>Búsqueda en Biblioteca:</span><span>Con o sin acentos</span></div>
+      <div class="tg-grid three">
+        <label for="fts-all" class="tg">Todo (Sin Tildes)</label>
+        <label for="fts-deep" class="tg">Citas y Personajes</label>
+        <label for="fts-skel" class="tg">Cargando</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-ai">
+      <div class="subpanel-title"><span>Detective Literario (Gemini 2.5 Flash):</span><span>Debounce 450ms + Zod</span></div>
+      <div class="tg-grid">
+        <label for="ai-res" class="tg">Candidatos + Cruce Catálogo</label>
+        <label for="ai-empty" class="tg">Prompts + Skeleton IA</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-ocr">
+      <div class="subpanel-title"><span>Marcatextos OCR, Glosario y Postales:</span><span>ML Kit On-Device</span></div>
+      <div class="tg-grid three">
+        <label for="ocr-scan" class="tg">Escáner + Limpieza</label>
+        <label for="ocr-glossary" class="tg">Glosario y Spoilers</label>
+        <label for="ocr-card" class="tg">Postal Compartible</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-loans">
+      <div class="subpanel-title"><span>Control de Préstamos Bidireccionales:</span><span>LENT_OUT / BORROWED_IN</span></div>
+      <div class="tg-grid three">
+        <label for="ln-active" class="tg">Activos + Cintillo</label>
+        <label for="ln-new" class="tg">Registrar + Alerta</label>
+        <label for="ln-hist" class="tg">Historial e Inventario</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARCO DEL TELÉFONO -->
+  <div class="phone">
+
+    <!-- =================================================================== -->
+    <!-- 1. PANTALLA: BÚSQUEDA PROFUNDA OFFLINE (SQLITE FTS5 SIN ACENTOS)    -->
+    <!-- =================================================================== -->
+    <div id="s-fts" class="scr">
+      <div>
+        <div class="sbar"><span class="mono">09:41</span><span>Tu Biblioteca · Sin conexión</span></div>
+        <div class="hdr">
+          <div>
+            <div class="muted">Explorador de lecturas</div>
+            <h1 class="h1 serif">En Mi Biblioteca</h1>
+          </div>
+          <label for="scr-ai" class="pill acc" style="cursor:pointer">
+            <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Ir al Detective Literario
+          </label>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-fts">
+            <label for="fts-all">Coincidencias</label>
+            <label for="fts-deep">Citas / Glosario</label>
+            <label for="fts-skel">Cargando</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 1A: COINCIDENCIAS UNIFICADAS SIN ACENTOS -->
+      <div class="fts-pane fts-pane-all">
+        <div class="search-box">
+          <svg class="lucide" style="color:var(--pri)" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="fts-query-input" class="search-input" value="bene gesserit miedo" oninput="simulateFtsFilter(this.value)" placeholder="Título, autor, frase subrayada, personaje o nota..." />
+          <span class="pill soft" style="font-size:12px;padding:2px 6px">Al instante</span>
+        </div>
+
+        <!-- Filtros rápidos de alcance -->
+        <div class="scope-bar hscroll">
+          <span class="scope-chip on">Todo (4)</span>
+          <span class="scope-chip">Libros (1)</span>
+          <span class="scope-chip">Citas (2)</span>
+          <span class="scope-chip">Personajes (1)</span>
+          <span class="scope-chip">Notas (0)</span>
+        </div>
+
+        <!-- Resultado 1: Libro + Sinopsis + Cita OCR coincidente -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="cv cv-sm c1"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+                <b style="font-size:14px">Dune (Crónicas de Dune #1)</b>
+                <span class="pill soft">Libro + 2 Citas</span>
+              </div>
+              <div class="muted">Frank Herbert · Debolsillo · Físico</div>
+            </div>
+          </div>
+
+          <div class="snippet-box">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--acc);margin-bottom:2px">
+              <span>CITA GUARDADA · Pág. 19 (Cap. 1)</span>
+              <span>Con o sin acentos</span>
+            </div>
+            <p class="serif" style="font-style:italic">
+              "No debo tener <mark class="hl">miedo</mark>. El <mark class="hl">miedo</mark> es el asesino de la mente. Letanía de la hermandad <mark class="hl">Bene Gesserit</mark>."
+            </p>
+          </div>
+
+          <div class="snippet-box char">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--pri);margin-bottom:2px">
+              <span>PERSONAJE · Dama Jessica (Hasta pág. 142)</span>
+              <span>Libre de Spoilers</span>
+            </div>
+            <p>
+              Concubina del Duque Leto y madre de Paul; entrenada por la orden <mark class="hl">Bene Gesserit</mark> en observación y control de voz.
+            </p>
+          </div>
+        </div>
+
+        <!-- Resultado 2: Prueba de búsqueda sin tildes ("garcia marquez / ficcion") -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;font-weight:700">Búsqueda insensible a acentos</span>
+            <span class="pill ok">Sin conexión</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button type="button" class="btn-inline" onclick="setFtsDemo('garcia marquez soledad')">"garcia marquez"</button>
+            <button type="button" class="btn-inline" onclick="setFtsDemo('cortazar magaga')">"cortazar"</button>
+            <button type="button" class="btn-inline" onclick="setFtsDemo('bene gesserit miedo')">"bene gesserit"</button>
+          </div>
+          <div class="muted" id="fts-demo-feedback" style="margin-top:6px">
+            Encuentra coincidencias en títulos, autores, notas y citas con o sin tildes.
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 1B: COINCIDENCIAS EN CITAS, GLOSARIO Y NOTAS CON SPOILER BLUR -->
+      <div class="fts-pane fts-pane-deep">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill">NOTA ANTI-OLVIDO · EN PAUSA</span>
+            <span class="muted">Rayuela · Pág. 214</span>
+          </div>
+          <p style="font-size:13px;margin-top:6px">
+            Me quedé cuando Horacio Oliveira conversa con el Club de la Serpiente sobre jazz y metafísica en París antes del capítulo prescindible.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill danger">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M1 1l22 22"/></svg>
+              CITA CON SPOILER · Pág. 398
+            </span>
+            <button type="button" class="btn-inline" onclick="toggleSearchSpoiler()" id="btn-search-spoiler">Revelar</button>
+          </div>
+          <p id="search-spoiler-txt" class="serif blur-spoiler" style="font-size:13px;margin-top:8px;font-style:italic" onclick="toggleSearchSpoiler()">
+            "El emperador Shaddam IV comprendió demasiado tarde que el planeta desértico había forjado un ejército invencible bajo el mando de Muad'Dib."
+          </p>
+          <div class="muted" style="margin-top:6px">
+            Protección activa: los resultados con spoilers mantienen el desenfoque en la vista previa.
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 1C: SKELETON GEOMÉTRICO Y CARGA SUAVE -->
+      <div class="fts-pane fts-pane-skel">
+        <div class="card">
+          <div class="lbl" style="margin-top:0"><span>Animación de carga suave</span><span>Sin saltos</span></div>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+            <div class="skel" style="width:52px;height:78px;border-radius:7px;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div class="skel" style="width:78%;height:14px;margin-bottom:8px"></div>
+              <div class="skel" style="width:52%;height:12px;margin-bottom:10px"></div>
+              <div class="skel" style="width:94%;height:28px;border-radius:8px"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="lbl" style="margin-top:0"><span>Búsqueda profunda en tu teléfono</span><span class="mono">Instantánea</span></div>
+          <div class="card-sub" style="margin-top:4px;font-size:12px">
+            <div>1. <b>Búsqueda unificada:</b> encuentra libros, frases y personajes en un solo lugar.</div>
+            <div style="margin-top:4px">2. <b>Campos analizados:</b> título, autores, editorial, sinopsis, notas personales y citas.</div>
+            <div style="margin-top:4px">3. <b>Respuesta fluida:</b> busca mientras escribes sin pausar la pantalla.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-fts" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Mi Biblioteca
+          </label>
+          <label for="scr-ai" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Detective IA
+          </label>
+          <label for="scr-ocr" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Citas y Notas
+          </label>
+          <label for="scr-loans" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            Préstamos
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 2. PANTALLA: DETECTIVE LITERARIO IA (GEMINI 2.5 FLASH + CATÁLOGO)   -->
+    <!-- =================================================================== -->
+    <div id="s-ai" class="scr">
+      <div>
+        <div class="sbar"><span class="mono">09:41</span><span>Detective Literario</span></div>
+        <div class="hdr">
+          <div>
+            <div class="muted">Encuentra libros por recuerdos</div>
+            <h1 class="h1 serif">Detective Literario</h1>
+          </div>
+          <span class="pill gold">Sin Spoilers</span>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg two seg-ai">
+            <label for="ai-res">Candidatos Encontrados</label>
+            <label for="ai-empty">Prompts + Skeleton IA</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 2A: RESULTADOS DEL DETECTIVE IA CRUZADOS CON BIBLIOTECA Y CATÁLOGO -->
+      <div class="ai-pane ai-pane-res">
+        <div class="ai-prompt-card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px">
+              <svg class="lucide lucide-sm" style="color:var(--acc)" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+              Recuerdo de trama, escena o frase aproximada
+            </span>
+            <span class="muted">Por recuerdos</span>
+          </div>
+          <textarea class="ai-textarea" rows="2" readonly>Novela donde un pueblo entero pierde la memoria por la peste del insomnio y ponen letreros a las cosas para recordar cómo se llaman y que Dios existe.</textarea>
+        </div>
+
+        <!-- Candidato 1: YA ESTÁ EN TU BIBLIOTECA LOCAL -->
+        <div class="card" style="border-color:var(--pri);border-width:1.5px">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="cv cv-md c2"><span class="ct serif">Cien años</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+                <span class="match-badge">98% Coincidencia</span>
+                <span class="pill">En tu Biblioteca</span>
+              </div>
+              <div style="font-size:15px;font-weight:700;margin-top:5px">Cien años de soledad</div>
+              <div class="muted">Gabriel García Márquez · Editorial Diana (496 págs.)</div>
+            </div>
+          </div>
+
+          <div class="why-box">
+            <b>Por qué coincide (sin spoilers):</b> En los primeros capítulos en Macondo se desata la peste del insomnio; José Arcadio Buendía etiqueta los objetos ("mesa", "reloj", "esta es la vaca") y coloca un cartel en la calle central recordando que Dios existe.
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:9px">
+            <button type="button" class="btn-inline pri" style="flex:1">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              Abrir en Mi Biblioteca (Librero Sala)
+            </button>
+          </div>
+        </div>
+
+        <!-- Candidato 2: NO ESTÁ EN TU BIBLIOTECA -> CRUCE CON GOOGLE BOOKS / OPEN LIBRARY -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="cv cv-md c7"><span class="ct serif">Ensayo Ceguera</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap">
+                <span class="match-badge" style="background:var(--surf);color:var(--fg);border-color:var(--line)">74% Coincidencia</span>
+                <span class="pill soft">Catálogo Externo</span>
+              </div>
+              <div style="font-size:15px;font-weight:700;margin-top:5px">Ensayo sobre la ceguera</div>
+              <div class="muted">José Saramago · Alfaguara · ISBN 9788420442693</div>
+            </div>
+          </div>
+
+          <div class="why-box">
+            <b>Por qué coincide:</b> Relata una epidemia repentina que altera la percepción colectiva de una ciudad entera, obligando a los habitantes a crear métodos de supervivencia y memoria cotidiana.
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px">
+            <button type="button" class="btn-inline">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/></svg>
+              A Wishlist
+            </button>
+            <button type="button" class="btn-inline acc">
+              <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              Elegir Edición
+            </button>
+          </div>
+        </div>
+
+        <div class="muted" style="text-align:center;font-size:12px;padding-bottom:4px">
+          Aviso IA: Las sugerencias de Gemini 2.5 Flash son orientativas y se verifican contra Google Books / Open Library.
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 2B: CONSTRUCTOR DE PROMPTS + SKELETON IA + PROXY SEGURO -->
+      <div class="ai-pane ai-pane-empty">
+        <div class="card">
+          <div class="lbl" style="margin-top:0"><span>Prueba describir lo que recuerdas</span><span>Ejemplos rápidos</span></div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
+            <div class="card-sub" style="margin-top:0">
+              <b>Por trama o atmósfera:</b> "Cuento corto donde un hombre vomita conejitos blancos en un departamento en Buenos Aires."
+            </div>
+            <div class="card-sub" style="margin-top:0">
+              <b>Por escena o personaje:</b> "Libro de ciencia ficción donde los gusanos gigantes producen una especia que permite doblar el espacio."
+            </div>
+            <div class="card-sub" style="margin-top:0">
+              <b>Por frase aproximada:</b> "Muchos años después, frente al pelotón de fusilamiento, recordó el hielo."
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="lbl" style="margin-top:0"><span>Skeleton durante análisis de Gemini + Cruce de Portadas</span><span>Cancelable</span></div>
+          <div style="display:flex;gap:12px;align-items:flex-start;margin-top:8px">
+            <div class="skel" style="width:64px;height:96px;border-radius:8px;flex-shrink:0"></div>
+            <div style="flex:1">
+              <div class="skel" style="width:45%;height:16px;border-radius:99px;margin-bottom:8px"></div>
+              <div class="skel" style="width:82%;height:14px;margin-bottom:6px"></div>
+              <div class="skel" style="width:100%;height:42px;border-radius:10px"></div>
+            </div>
+          </div>
+          <div class="muted" style="margin-top:8px">
+            Seguridad de producción: llamada protegida vía `Supabase Edge Function` / cliente tipado con validación estricta `Zod` y `AbortController`.
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-fts" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Mi Biblioteca
+          </label>
+          <label for="scr-ai" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Detective IA
+          </label>
+          <label for="scr-ocr" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Citas y Notas
+          </label>
+          <label for="scr-loans" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            Préstamos
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 3. PANTALLA: MARCATEXTOS OCR, GLOSARIO DE PERSONAJES Y POSTALES     -->
+    <!-- =================================================================== -->
+    <div id="s-ocr" class="scr">
+      <div>
+        <div class="sbar"><span class="mono">09:41</span><span>Escáner de citas</span></div>
+        <div class="hdr">
+          <div>
+            <div class="muted">Dune · Frank Herbert</div>
+            <h1 class="h1 serif">Citas y Glosario</h1>
+          </div>
+          <span class="pill">Cámara</span>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-ocr">
+            <label for="ocr-scan">Escanear página</label>
+            <label for="ocr-glossary">Glosario / Citas</label>
+            <label for="ocr-card">Postal</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 3A: ESCÁNER DE PÁGINAS Y SANITIZADOR DE GUIONES -->
+      <div class="ocr-pane ocr-pane-scan">
+        <div class="cam-frame">
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-weight:700">
+              <svg class="lucide lucide-sm" style="color:#E9A23B" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              Recorte de Página Impresa
+            </span>
+            <span class="pill soft" style="background:#2E2A27;color:#FAF7F2;border-color:#4E4740">Linterna Off</span>
+          </div>
+
+          <div class="page-crop serif">
+            ...aquella disciplina resultaba <span class="ocr-hl-line">impres-</span><br />
+            <span class="ocr-hl-line">cindible para sobrevivir en el desier-</span><br />
+            <span class="ocr-hl-line">to de Arrakis, donde el misterio de la</span><br />
+            <span class="ocr-hl-line">especia transforma la mente...</span>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#D6D3CD">
+            <span>Texto detectado en el dispositivo</span>
+            <button type="button" class="btn-inline acc" style="padding:4px 9px;font-size:12px" onclick="toggleOcrSanitizer()" id="btn-ocr-clean">
+              Ver texto crudo vs limpio
+            </button>
+          </div>
+        </div>
+
+        <!-- Resultado post-OCR con limpieza automática de guiones -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:12px;font-weight:700">Texto extraído (`/\-\s*\r?\n\s*/g` aplicado)</span>
+            <span class="pill ok" id="ocr-clean-badge">2 guiones unidos</span>
+          </div>
+
+          <div class="card-sub serif" id="ocr-clean-preview" style="font-size:13px;line-height:1.45">
+            "Aquella disciplina resultaba <b>imprescindible</b> para sobrevivir en el <b>desierto</b> de Arrakis, donde el misterio de la especia transforma la mente."
+          </div>
+
+          <!-- Clasificación: Cita vs Personaje vs Nota + Página y Capítulo -->
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:9px">
+            <button type="button" class="btn-inline pri" id="type-quote" onclick="selectQuoteType('QUOTE')">Cita (QUOTE)</button>
+            <button type="button" class="btn-inline" id="type-char" onclick="selectQuoteType('CHARACTER')">Personaje</button>
+            <button type="button" class="btn-inline" id="type-note" onclick="selectQuoteType('NOTE')">Nota / Glosario</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:92px 1fr;gap:8px;margin-top:8px">
+            <div class="card-sub" style="margin-top:0;padding:7px 9px">
+              <div class="muted" style="font-size:12px">Página</div>
+              <b class="mono" style="font-size:13px">Pág. 142</b>
+            </div>
+            <div class="card-sub" style="margin-top:0;padding:7px 9px">
+              <div class="muted" style="font-size:12px">Capítulo / Cuento (Opcional)</div>
+              <b style="font-size:12px">Libro I · Arrakis</b>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid var(--line)">
+            <div class="swatch-row">
+              <span class="muted" style="font-size:12px">Marcatextos:</span>
+              <span class="swatch active" style="background:#F3E8CB" title="Ámbar papel"></span>
+              <span class="swatch" style="background:#D8EAD8" title="Verde salvia"></span>
+              <span class="swatch" style="background:#F2D8CE" title="Terracota suave"></span>
+            </div>
+            <span class="pill soft">Spoiler: No</span>
+          </div>
+
+          <button type="button" class="cta" style="margin-top:10px">
+            <svg class="lucide" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            Guardar en el Libro (SafeButton)
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 3B: GLOSARIO DE PERSONAJES LIBRE DE SPOILERS Y CITAS -->
+      <div class="ocr-pane ocr-pane-glossary">
+        <div class="card" style="background:rgba(30,70,53,.1);border-color:var(--pri)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:13px">Glosario Personal Libre de Spoilers</b>
+            <span class="pill">Hasta tu pág. 142</span>
+          </div>
+          <p class="muted" style="margin-top:4px;color:var(--fg)">
+            Consulta quién es cada personaje según lo que has leído hasta hoy, sin riesgo de spoilers en internet.
+          </p>
+        </div>
+
+        <!-- Personaje 1 -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill">PERSONAJE · Pág. 28</span>
+            <span class="muted">Casa Atreides</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;margin-top:5px">Dr. Wellington Yueh</div>
+          <p style="font-size:12px;margin-top:3px">
+            Médico Suk de la familia Atreides con rombo imperial en la frente; le regala a Paul una pequeña Biblia Católica Naranja durante la mudanza a Arrakis.
+          </p>
+        </div>
+
+        <!-- Personaje 2 -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill">PERSONAJE · Pág. 118</span>
+            <span class="muted">Fremen / Planetólogo</span>
+          </div>
+          <div style="font-size:15px;font-weight:700;margin-top:5px">Dr. Liet-Kynes</div>
+          <p style="font-size:12px;margin-top:3px">
+            Ecólogo imperial encargado de supervisar la transición en Arrakis; guía al Duque Leto y a Paul en su primer vuelo sobre los recolectores de especia.
+          </p>
+        </div>
+
+        <!-- Cita con protección Spoiler Blur interactiva -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill danger">CITA OCULTA POR SPOILER · Pág. 380</span>
+            <button type="button" class="btn-inline" onclick="toggleGlossarySpoiler()" id="btn-gl-spoiler">Tocar para revelar</button>
+          </div>
+          <p id="gl-spoiler-txt" class="serif blur-spoiler" style="font-size:13px;margin-top:8px;font-style:italic" onclick="toggleGlossarySpoiler()">
+            "Quien puede destruir una cosa tiene el control absoluto sobre ella."
+          </p>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 3C: GENERADOR DE POSTALES LITERARIAS COMPARTIBLES -->
+      <div class="ocr-pane ocr-pane-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700">Plantilla de Postal (`ViewShot` + `Sharing`):</span>
+          <div style="display:flex;gap:5px">
+            <button type="button" class="btn-inline pri" id="th-btn-cream" onclick="setPostcardTheme('cream')" style="padding:4px 8px;font-size:12px">Crema</button>
+            <button type="button" class="btn-inline" id="th-btn-night" onclick="setPostcardTheme('night')" style="padding:4px 8px;font-size:12px">Noche</button>
+            <button type="button" class="btn-inline" id="th-btn-forest" onclick="setPostcardTheme('forest')" style="padding:4px 8px;font-size:12px">Bosque</button>
+          </div>
+        </div>
+
+        <div id="postcard-preview" class="postcard-canvas pc-theme-cream">
+          <div style="display:flex;justify-content:space-between;align-items:center;opacity:.75;font-size:12px;font-weight:700">
+            <span>CITA SUBRAYADA · PÁG. 19</span>
+            <span class="mono">BACIBOOKS</span>
+          </div>
+
+          <p class="serif" style="font-size:17px;line-height:1.45;margin:14px 0;font-style:italic">
+            "No debo tener miedo. El miedo es el asesino de la mente. Cuando el miedo haya pasado, volveré el ojo interior para escrutar su camino."
+          </p>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid rgba(128,128,128,.25)">
+            <div style="display:flex;gap:10px;align-items:center">
+              <div class="cv cv-sm c1" style="width:40px;flex:0 0 40px;padding:4px"><span class="ct serif" style="font-size:12px">Dune</span></div>
+              <div>
+                <div style="font-size:13px;font-weight:800">Dune</div>
+                <div style="font-size:12px;opacity:.8">Frank Herbert · Ed. Debolsillo</div>
+              </div>
+            </div>
+            <span class="mono" style="font-size:12px;opacity:.75">Cap. 1</span>
+          </div>
+        </div>
+
+        <button type="button" class="cta acc">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+          Compartir Postal Literaria (PNG Alta Resolución)
+        </button>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-fts" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Mi Biblioteca
+          </label>
+          <label for="scr-ai" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Detective IA
+          </label>
+          <label for="scr-ocr" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Citas y Notas
+          </label>
+          <label for="scr-loans" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            Préstamos
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- 4. PANTALLA: CONTROL DE PRÉSTAMOS BIDIRECCIONALES (LOANS)           -->
+    <!-- =================================================================== -->
+    <div id="s-loans" class="scr">
+      <div>
+        <div class="sbar"><span class="mono">09:41</span><span>Notificaciones Locales Activas</span></div>
+        <div class="hdr">
+          <div>
+            <div class="muted">Libros Físicos · Ida y Vuelta</div>
+            <h1 class="h1 serif">Control de Préstamos</h1>
+          </div>
+          <label for="ln-new" class="pill acc" style="cursor:pointer">+ Nuevo</label>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-ln">
+            <label for="ln-active">Activos (3)</label>
+            <label for="ln-new">Registrar</label>
+            <label for="ln-hist">Historial / Regla</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 4A: PRÉSTAMOS ACTIVOS (LENT_OUT Y BORROWED_IN) + CINTILLO EN PORTADA -->
+      <div class="ln-pane ln-pane-active">
+        <!-- Resumen bidireccional -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div class="card-sub" style="margin-top:0">
+            <div class="muted">Libros que PRESTÉ</div>
+            <div style="font-size:16px;font-weight:800;color:var(--acc)">2 en manos de amigos</div>
+          </div>
+          <div class="card-sub" style="margin-top:0">
+            <div class="muted">ME PRESTARON</div>
+            <div style="font-size:16px;font-weight:800;color:var(--pri)">1 leyendo ahora</div>
+          </div>
+        </div>
+
+        <!-- Préstamo 1: LENT_OUT (Vencido -> Alerta Roja) -->
+        <div class="card" style="border-color:var(--danger)">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="cv cv-md c6">
+              <span class="loan-ribbon">Prestado</span>
+              <span class="ct serif">Rayuela</span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+                <span class="pill acc">PRESTÉ (LENT_OUT)</span>
+                <span class="due-chip due-late">Vencido hace 3d</span>
+              </div>
+              <div style="font-size:15px;font-weight:700;margin-top:4px">Rayuela · Julio Cortázar</div>
+              <div class="muted">Persona: <b>Sofía Méndez</b> · Prestado el 15 Oct</div>
+              <div class="muted">Nota: Edición conmemorativa RAE con separador</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px">
+            <button type="button" class="btn-inline" onclick="extendLoanDemo(this)">+7 días plazo</button>
+            <button type="button" class="btn-inline pri" onclick="markLoanReturnedDemo(this)">Marcar Devuelto</button>
+          </div>
+        </div>
+
+        <!-- Préstamo 2: BORROWED_IN (Libro que ME prestaron / Biblioteca -> Suma a metas pero ownership = BORROWED) -->
+        <div class="card">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <div class="cv cv-md c8">
+              <span class="loan-ribbon in">De Marco</span>
+              <span class="ct serif">Solaris</span>
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:4px">
+                <span class="pill">ME PRESTARON (BORROWED_IN)</span>
+                <span class="due-chip due-ok">Vence 18 Nov</span>
+              </div>
+              <div style="font-size:15px;font-weight:700;margin-top:4px">Solaris · Stanislaw Lem</div>
+              <div class="muted">Dueño: <b>Marco Villalobos</b> · Avance: Pág. 110 / 280</div>
+              <div class="muted">Recordatorio local programado: 17 Nov · 10:00 AM</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px">
+            <button type="button" class="btn-inline">Registrar avance</button>
+            <button type="button" class="btn-inline pri" onclick="markLoanReturnedDemo(this)">Ya lo devolví</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 4B: MODAL DE REGISTRO DE PRÉSTAMO Y RECORDATORIO LOCAL -->
+      <div class="ln-pane ln-pane-new">
+        <div class="card">
+          <div class="lbl" style="margin-top:0"><span>1. Dirección del Préstamo</span><span>Bidireccional</span></div>
+          <div class="seg two seg-dir">
+            <label for="dir-out">Presté un libro mío</label>
+            <label for="dir-in">Me prestaron un libro</label>
+          </div>
+
+          <div class="lbl"><span>2. Persona o Biblioteca Pública</span><span>Obligatorio</span></div>
+          <div class="card-sub" style="margin-top:0">
+            <div style="font-size:13px;font-weight:700">Biblioteca Vasconcelos / Carlos Ruiz</div>
+            <div class="muted">Contacto opcional: +52 55 4123 8890</div>
+          </div>
+
+          <div class="lbl"><span>3. Fecha Acordada de Devolución</span><span>Notificación Local</span></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+            <button type="button" class="btn-inline" onclick="setLoanDays(7)">7 días</button>
+            <button type="button" class="btn-inline pri" onclick="setLoanDays(14)">14 días</button>
+            <button type="button" class="btn-inline" onclick="setLoanDays(30)">30 días</button>
+            <button type="button" class="btn-inline">Elegir</button>
+          </div>
+
+          <div class="card-sub" id="loan-due-summary">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:12px;font-weight:700">Fecha límite: Vie 20 Nov 2026</span>
+              <span class="pill ok">Alerta 24h antes</span>
+            </div>
+            <div class="muted" style="margin-top:3px">
+              Se programará una notificación local (`expo-notifications`) en el teléfono sin necesidad de servidor.
+            </div>
+          </div>
+
+          <button type="button" class="cta acc" style="margin-top:11px">
+            <svg class="lucide" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Guardar Préstamo y Programar Recordatorio
+          </button>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA 4C: HISTORIAL E INTEGRIDAD DE INVENTARIO (OWNED VS BORROWED) -->
+      <div class="ln-pane ln-pane-hist">
+        <div class="card" style="background:rgba(30,70,53,.1);border-color:var(--pri)">
+          <b style="font-size:13px">Regla de Inventario para Libros Prestados (`BORROWED_IN`)</b>
+          <p style="font-size:12px;margin-top:4px">
+            Cuando devuelves un libro que te prestaron (`ownership = 'BORROWED'`), tus páginas leídas, sesiones de cronómetro y citas OCR se conservan al 100% en tus estadísticas, pero el libro no infla el inventario de libros físicos propios en tu estantería.
+          </p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill soft">DEVUELTO EN PLAZO</span>
+            <span class="muted mono">Duración: 12 días</span>
+          </div>
+          <div style="font-size:14px;font-weight:700;margin-top:5px">El nombre de la rosa · Umberto Eco</div>
+          <div class="muted">Prestado a: <b>Daniela Soto</b> · Devuelto el 29 Oct 2026</div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill soft">DEVUELTO A BIBLIOTECA</span>
+            <span class="muted mono">Leído al 100%</span>
+          </div>
+          <div style="font-size:14px;font-weight:700;margin-top:5px">Ficciones · Jorge Luis Borges</div>
+          <div class="muted">Origen: <b>Biblioteca Central (Préstamo)</b> · 5 citas conservadas</div>
+        </div>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-fts" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            Mi Biblioteca
+          </label>
+          <label for="scr-ai" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>
+            Detective IA
+          </label>
+          <label for="scr-ocr" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+            Citas y Notas
+          </label>
+          <label for="scr-loans" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+            Préstamos
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// 1. Simulador de prueba sin tildes en FTS5
+function setFtsDemo(queryText) {
+  var inp = document.getElementById('fts-query-input');
+  var fb = document.getElementById('fts-demo-feedback');
+  if (inp) inp.value = queryText;
+  if (fb) {
+    fb.textContent =
+      'Consulta ejecutada con debounce (280ms): "' +
+      queryText +
+      '" -> Coincidencia instantánea sin requerir tildes.';
+  }
+}
+
+function simulateFtsFilter(val) {
+  var fb = document.getElementById('fts-demo-feedback');
+  if (!fb) return;
+  if (!val || !val.trim()) {
+    fb.textContent = 'Campo vacío (limpieza en 0ms). Escribe sin preocuparte por acentos.';
+  } else {
+    fb.textContent = 'Buscando en SQLite FTS5 ("' + val + '") sobre libros, citas OCR, personajes y notas...';
+  }
+}
+
+// 2. Revelador de Spoilers en Búsqueda y Glosario
+function toggleSearchSpoiler() {
+  var el = document.getElementById('search-spoiler-txt');
+  var btn = document.getElementById('btn-search-spoiler');
+  if (!el) return;
+  var isRev = el.classList.toggle('revealed');
+  if (btn) btn.textContent = isRev ? 'Ocultar' : 'Revelar';
+}
+
+function toggleGlossarySpoiler() {
+  var el = document.getElementById('gl-spoiler-txt');
+  var btn = document.getElementById('btn-gl-spoiler');
+  if (!el) return;
+  var isRev = el.classList.toggle('revealed');
+  if (btn) btn.textContent = isRev ? 'Ocultar spoiler' : 'Tocar para revelar';
+}
+
+// 3. Comparador interactivo del Sanitizador Post-OCR (/-\s*\r?\n\s*/g)
+var showingRawOcr = false;
+function toggleOcrSanitizer() {
+  showingRawOcr = !showingRawOcr;
+  var prev = document.getElementById('ocr-clean-preview');
+  var badge = document.getElementById('ocr-clean-badge');
+  if (!prev || !badge) return;
+  if (showingRawOcr) {
+    prev.innerHTML =
+      '"Aquella disciplina resultaba <b>impres-\\ncindible</b> para sobrevivir en el <b>desier-\\nto</b> de Arrakis, donde el misterio de la especia transforma la mente."';
+    badge.textContent = 'Crudo (con guiones)';
+  } else {
+    prev.innerHTML =
+      '"Aquella disciplina resultaba <b>imprescindible</b> para sobrevivir en el <b>desierto</b> de Arrakis, donde el misterio de la especia transforma la mente."';
+    badge.textContent = '2 guiones unidos';
+  }
+}
+
+function selectQuoteType(typeKey) {
+  var ids = { QUOTE: 'type-quote', CHARACTER: 'type-char', NOTE: 'type-note' };
+  Object.keys(ids).forEach(function (k) {
+    var b = document.getElementById(ids[k]);
+    if (b) {
+      if (k === typeKey) b.classList.add('pri');
+      else b.classList.remove('pri');
+    }
+  });
+}
+
+// 4. Selector de Tema de Postal Literaria
+function setPostcardTheme(themeName) {
+  var card = document.getElementById('postcard-preview');
+  if (!card) return;
+  card.className = 'postcard-canvas pc-theme-' + themeName;
+  ['cream', 'night', 'forest'].forEach(function (t) {
+    var btn = document.getElementById('th-btn-' + t);
+    if (btn) {
+      if (t === themeName) btn.classList.add('pri');
+      else btn.classList.remove('pri');
+    }
+  });
+}
+
+// 5. Acciones rápidas de Préstamos
+function markLoanReturnedDemo(btnEl) {
+  if (!btnEl) return;
+  btnEl.textContent = 'Devuelto (Notificación cancelada)';
+  btnEl.disabled = true;
+}
+
+function extendLoanDemo(btnEl) {
+  if (!btnEl) return;
+  btnEl.textContent = 'Plazo +7d aplicado';
+}
+
+function setLoanDays(days) {
+  var sum = document.getElementById('loan-due-summary');
+  if (!sum) return;
+  var base = new Date(2026, 10, 6);
+  var target = new Date(base.getTime() + days * 86400000);
+  var fmt = target.toLocaleDateString('es-ES', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+  sum.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center">' +
+    '<span style="font-size:12px;font-weight:700">Fecha límite (' +
+    days +
+    'd): ' +
+    fmt +
+    '</span>' +
+    '<span class="pill ok">Alerta 24h antes</span></div>' +
+    '<div class="muted" style="margin-top:3px">Se programará una notificación local (`expo-notifications`) en el teléfono sin necesidad de servidor.</div>';
+}
+</script>
+</body>
+</html>

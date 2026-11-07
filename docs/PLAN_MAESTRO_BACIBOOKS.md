@@ -1,4 +1,4 @@
-# Plan Maestro de Producto y Arquitectura: **BaciBooks** 📚
+﻿# Plan Maestro de Producto y Arquitectura: **BaciBooks** 📚
 
 **BaciBooks** es una aplicación móvil (*Android y iOS*) diseñada bajo una filosofía **Local-First, Visual y Centrada en el Lector**. Su propósito es unificar en un solo lugar **tanto tu biblioteca física como tus libros digitales (eBooks)**, resolviendo el registro de la **edición exacta (ISBN + Editorial + Portada real)** y ofreciendo un motor inteligente de **metas, estadísticas, predicciones de lectura y búsqueda por recuerdos**.
 
@@ -271,6 +271,8 @@ flowchart LR
   - Estados de lectura completos: `Por leer`, `Leyendo` (avance por páginas o por `%` en digitales), `En espera / Pausado` (con nota anti-olvido), `Leído` (calificación con medias estrellas e historial de relecturas) y `Abandonado (DNF)`.
   - Mapa de **Ubicación Física** (Libreros y Repisas) + colecciones digitales + diálogo inteligente ante múltiples ediciones de un mismo libro.
   - **Wishlist** de compras y la **Ruleta interactiva "¿Qué leo hoy?"** con filtros inteligentes y protección de orden de Sagas (nunca sugiere el tomo `#2` si el `#1` sigue pendiente).
+  - **Skeletons animados de carga (Skeleton Placeholders):** estructuras de carga proporcionales en biblioteca, detalle del libro, estanterías y búsqueda para eliminar saltos bruscos de interfaz (*Layout Shift*).
+  - **Debounce en búsquedas (useDebouncedValue):** retraso reactivo (250-300ms en búsquedas locales FTS5 y 400-500ms en APIs externas/IA con cancelación de peticiones obsoletas) para proteger el hilo de UI y la cuota de APIs.
 
 ### 📊 Fase 3 (`v0.3.0`): Cronómetro, Metas (Mensual/Anual), Estadísticas y Predicciones
 - **Objetivo:** Convertir la app en tu entrenador de hábito lector con métricas y proyecciones reales.

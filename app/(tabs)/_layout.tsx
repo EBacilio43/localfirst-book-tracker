@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { BookOpen, ScanBarcode, Search } from 'lucide-react-native';
+import { BookOpen, ScanBarcode, Search, BarChart3 } from 'lucide-react-native';
 import { colors } from '@/core/theme/colors';
 
 export default function TabsLayout() {
@@ -48,6 +48,13 @@ export default function TabsLayout() {
         options={{
           title: 'Buscar',
           tabBarIcon: ({ color, size }) => <Search size={size} color={color} strokeWidth={2} />,
+        }}
+      />
+      <Tabs.Screen
+        name="stats"
+        options={{
+          title: 'Metas y Stats',
+          tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} strokeWidth={2} />,
         }}
       />
     </Tabs>

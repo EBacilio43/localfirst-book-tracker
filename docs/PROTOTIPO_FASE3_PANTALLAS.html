@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fase 3 (v0.3.0) — Prototipo Interactivo: Cronómetro, Metas, Predicciones y Estadísticas</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:#0F0E0D;color:#F3EFE7;padding:12px;line-height:1.4}
+.serif{font-family:Georgia,"Times New Roman",Times,serif}
+.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+input.st{display:none}
+label{cursor:pointer;user-select:none}
+.wrap{max-width:414px;margin:0 auto}
+.hscroll{scrollbar-width:none;overflow-x:auto}
+.hscroll::-webkit-scrollbar{display:none}
+
+/* ---------- Iconos Lucide (SVG Vectoriales, Cero Emojis) ---------- */
+.lucide{display:inline-block;width:16px;height:16px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none;vertical-align:-2px;flex-shrink:0}
+.lucide-tab{width:20px;height:20px;margin-bottom:2px}
+.lucide-lg{width:22px;height:22px}
+.lucide-sm{width:13px;height:13px;vertical-align:-1px}
+
+/* ---------- Controles Superiores del Prototipo ---------- */
+.chrome{background:#1C1917;border:1px solid #2E2A27;border-radius:18px;padding:12px;margin-bottom:14px}
+.chrome-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#A8A29E;margin-bottom:8px}
+.tag{background:#1E4635;color:#FAF7F2;font-weight:700;padding:4px 10px;border-radius:999px;font-size:12px}
+.tg-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#12100E;padding:4px;border-radius:12px;margin-top:6px}
+.tg-grid.three{grid-template-columns:repeat(3,1fr)}
+.tg-grid.four{grid-template-columns:repeat(4,1fr)}
+.tg{display:flex;align-items:center;justify-content:center;gap:4px;text-align:center;font-size:12px;font-weight:600;padding:8px 4px;border-radius:9px;color:#A8A29E;transition:all .15s ease}
+.subpanel{display:none;margin-top:8px;padding-top:8px;border-top:1px solid #2E2A27}
+.subpanel-title{font-size:12px;color:#A8A29E;margin-bottom:4px;display:flex;justify-content:space-between}
+
+/* Activación de pestañas principales del panel superior */
+#scr-timer:checked ~ .wrap .chrome label[for="scr-timer"],
+#scr-goals:checked ~ .wrap .chrome label[for="scr-goals"],
+#scr-forecast:checked ~ .wrap .chrome label[for="scr-forecast"],
+#scr-stats:checked ~ .wrap .chrome label[for="scr-stats"]{background:#B85F30;color:#fff}
+
+#thm-day:checked ~ .wrap .chrome label[for="thm-day"],
+#thm-night:checked ~ .wrap .chrome label[for="thm-night"]{background:#1E4635;color:#FAF7F2}
+
+#scr-timer:checked ~ .wrap .sp-timer,
+#scr-goals:checked ~ .wrap .sp-goals,
+#scr-forecast:checked ~ .wrap .sp-forecast,
+#scr-stats:checked ~ .wrap .sp-stats{display:block}
+
+#tm-active:checked ~ .wrap .chrome label[for="tm-active"],
+#tm-finish:checked ~ .wrap .chrome label[for="tm-finish"],
+#tm-outlier:checked ~ .wrap .chrome label[for="tm-outlier"],
+#gl-track:checked ~ .wrap .chrome label[for="gl-track"],
+#gl-config:checked ~ .wrap .chrome label[for="gl-config"],
+#fc-book:checked ~ .wrap .chrome label[for="fc-book"],
+#fc-catchup:checked ~ .wrap .chrome label[for="fc-catchup"],
+#fc-cold:checked ~ .wrap .chrome label[for="fc-cold"],
+#st-overview:checked ~ .wrap .chrome label[for="st-overview"],
+#st-streak:checked ~ .wrap .chrome label[for="st-streak"],
+#st-wrapped:checked ~ .wrap .chrome label[for="st-wrapped"]{background:#3A3530;color:#F3EFE7}
+
+/* ---------- Marco del Teléfono y Tokens de Tema ---------- */
+.phone{
+  --bg:#FAF7F2;
+  --fg:#1C1917;
+  --muted:#6B6560;
+  --surf:#EFEAE1;
+  --card:#FFFDF8;
+  --line:#D8CFC0;
+  --pri:#1E4635;
+  --pri-fg:#FAF7F2;
+  --acc:#B85F30;
+  --gold:#C98A2C;
+  --danger:#C83E32;
+  --ok:#16803C;
+  border-radius:36px;
+  border:5px solid #2E2A27;
+  background:var(--bg);
+  color:var(--fg);
+  overflow:hidden;
+  box-shadow:0 20px 40px rgba(0,0,0,.5)
+}
+#thm-night:checked ~ .wrap .phone{
+  --bg:#161412;
+  --fg:#F3EFE7;
+  --muted:#A8A29E;
+  --surf:#221F1C;
+  --card:#2C2824;
+  --line:#3F3933;
+  --pri:#2E6A50;
+  --pri-fg:#FAF7F2;
+  --acc:#C96E3C;
+  --gold:#E9A23B;
+  --danger:#E5674D;
+  --ok:#22C55E;
+}
+
+.scr{display:none;min-height:760px;flex-direction:column;justify-content:space-between}
+#scr-timer:checked ~ .wrap #s-timer,
+#scr-goals:checked ~ .wrap #s-goals,
+#scr-forecast:checked ~ .wrap #s-forecast,
+#scr-stats:checked ~ .wrap #s-stats{display:flex}
+
+.sbar{display:flex;justify-content:space-between;padding:14px 22px 4px;font-size:12px;font-weight:600;color:var(--muted)}
+.hdr{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;padding:8px 20px 12px}
+.h1{font-size:24px;font-weight:700;letter-spacing:-.3px;line-height:1.15}
+.muted{color:var(--muted);font-size:12px}
+
+/* ---------- Componentes Comunes ---------- */
+.pill{font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;background:var(--pri);color:var(--pri-fg);display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.pill.acc{background:var(--acc);color:#fff}
+.pill.soft{background:var(--surf);color:var(--fg);border:1px solid var(--line)}
+.pill.gold{background:rgba(201,138,44,.18);color:var(--fg);border:1px solid var(--gold)}
+.pill.danger{background:rgba(200,62,50,.15);color:var(--danger);border:1px solid var(--danger)}
+
+.seg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surf);border-radius:14px;padding:4px;gap:4px}
+.seg.two{grid-template-columns:1fr 1fr}
+.seg label{min-height:36px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);border-radius:10px}
+
+.cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:50px;border-radius:16px;background:var(--pri);color:var(--pri-fg);font-size:14px;font-weight:700;border:none;cursor:pointer}
+.cta.acc{background:var(--acc);color:#fff}
+.cta.danger{background:var(--danger);color:#fff}
+.btn2{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;min-height:44px;border-radius:14px;background:var(--surf);color:var(--fg);font-size:13px;font-weight:600;margin-top:8px;border:1px solid var(--line);cursor:pointer}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.card-sub{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:11px 12px;margin-top:8px}
+.lbl{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;font-weight:700;margin:10px 0 6px;color:var(--fg)}
+.lbl span{font-weight:500;color:var(--muted)}
+
+/* Portadas en miniatura */
+.cv{aspect-ratio:2/3;border-radius:5px 9px 9px 5px;padding:8px 6px;color:#FAF7F2;display:flex;flex-direction:column;justify-content:flex-end;position:relative;overflow:hidden;box-shadow:0 4px 10px rgba(0,0,0,.22),inset 3px 0 0 rgba(255,255,255,.1)}
+.cv-sm{width:52px;flex:0 0 52px}
+.cv-md{width:70px;flex:0 0 70px}
+.ct{font-size:12px;font-weight:700;line-height:1.15}
+.sn{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.55);font-size:12px;font-weight:700;padding:1px 5px;border-radius:5px}
+.eb{position:absolute;top:5px;right:5px;background:rgba(250,247,242,.92);color:#1C1917;font-size:12px;font-weight:700;padding:1px 5px;border-radius:5px}
+.c1{background:linear-gradient(160deg,#9A4B26,#4A200C)}
+.c6{background:linear-gradient(160deg,#1E4635,#0D2118)}
+.c7{background:linear-gradient(160deg,#4A3B5C,#21192B)}
+.c8{background:linear-gradient(160deg,#234B5E,#0F232E)}
+
+/* Barras de progreso */
+.prog-track{height:10px;background:var(--line);border-radius:999px;overflow:hidden;margin:8px 0}
+.prog-fill{height:100%;background:var(--pri);border-radius:999px;transition:width .2s ease}
+.prog-fill.acc{background:var(--acc)}
+.prog-fill.gold{background:var(--gold)}
+
+/* ---------- 1. PANTALLA: CRONÓMETRO PERSISTENTE POR TIMESTAMPS ---------- */
+#tm-active:checked ~ .wrap .seg-tm label[for="tm-active"],
+#tm-finish:checked ~ .wrap .seg-tm label[for="tm-finish"],
+#tm-outlier:checked ~ .wrap .seg-tm label[for="tm-outlier"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.tm-pane{display:none;padding:0 20px;flex:1}
+#tm-active:checked ~ .wrap .tm-pane-active,
+#tm-finish:checked ~ .wrap .tm-pane-finish,
+#tm-outlier:checked ~ .wrap .tm-pane-outlier{display:block}
+
+.timer-dial{background:var(--card);border:2px solid var(--pri);border-radius:26px;padding:18px 16px;text-align:center;margin:8px 0 12px;box-shadow:0 8px 24px rgba(30,70,53,.1)}
+.timer-digits{font-size:44px;font-weight:800;letter-spacing:1px;color:var(--fg);margin:6px 0}
+.timer-epoch{display:inline-flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:12px;color:var(--muted)}
+.pulse-dot{width:8px;height:8px;border-radius:999px;background:var(--ok);display:inline-block}
+.timer-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+
+.direct-input-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--card);border:1.5px solid var(--pri);border-radius:12px;padding:8px 12px;margin-top:8px}
+.direct-input-field{font-size:18px;font-weight:800;color:var(--fg);background:transparent;border:none;width:76px;text-align:center;border-bottom:2px solid var(--acc);padding-bottom:2px}
+
+.retro-row{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border-radius:12px;padding:8px 12px;margin-top:8px;border:1px solid var(--line)}
+.retro-pills{display:flex;gap:6px}
+.retro-pill{padding:5px 10px;border-radius:8px;font-size:12px;font-weight:700;color:var(--muted);background:var(--card);border:1px solid var(--line)}
+#dt-today:checked ~ .wrap label[for="dt-today"],
+#dt-yest:checked ~ .wrap label[for="dt-yest"]{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+.outlier-box{background:rgba(200,62,50,.09);border:1.5px solid var(--danger);border-radius:18px;padding:12px 14px;margin-bottom:12px}
+.outlier-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.outlier-stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 6px;text-align:center}
+.outlier-stat-val{font-size:16px;font-weight:800;color:var(--fg);display:block;margin-top:2px}
+.outlier-compare{display:flex;align-items:center;justify-content:space-between;background:var(--surf);border:1px dashed var(--line);border-radius:12px;padding:8px 12px;margin-top:8px;font-size:12px}
+.outlier-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.opt-tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 10px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;transition:border-color .15s ease}
+.opt-tile:hover{border-color:var(--pri)}
+
+/* ---------- 2. PANTALLA: METAS DE LECTURA (ANUAL, MENSUAL Y DIARIA) ---------- */
+#gl-track:checked ~ .wrap .seg-gl label[for="gl-track"],
+#gl-config:checked ~ .wrap .seg-gl label[for="gl-config"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.gl-pane{display:none;padding:0 20px;flex:1}
+#gl-track:checked ~ .wrap .gl-pane-track,
+#gl-config:checked ~ .wrap .gl-pane-config{display:block}
+
+/* Simulador de estado de ritmo (Adelantado / En ritmo / Atrasado) */
+#pace-ahead:checked ~ .wrap .seg-pace label[for="pace-ahead"],
+#pace-ontrack:checked ~ .wrap .seg-pace label[for="pace-ontrack"],
+#pace-behind:checked ~ .wrap .seg-pace label[for="pace-behind"]{background:var(--pri);color:var(--pri-fg)}
+
+.pace-banner{display:none;align-items:flex-start;gap:10px;border-radius:16px;padding:12px;margin-bottom:12px;border:1px solid var(--line)}
+#pace-ahead:checked ~ .wrap .pb-ahead{display:flex;background:rgba(30,70,53,.12);border-color:var(--pri)}
+#pace-ontrack:checked ~ .wrap .pb-ontrack{display:flex;background:var(--surf);border-color:var(--line)}
+#pace-behind:checked ~ .wrap .pb-behind{display:flex;background:rgba(184,95,48,.14);border-color:var(--acc)}
+
+.goal-kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.goal-kpi{background:var(--surf);border-radius:12px;padding:9px 10px;border:1px solid var(--line)}
+.kpi-val{font-size:17px;font-weight:800;color:var(--fg)}
+
+.stepper-row{display:flex;justify-content:space-between;align-items:center;background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-top:8px}
+.stepper-btns{display:flex;align-items:center;gap:8px}
+.step-btn{width:32px;height:32px;border-radius:9px;background:var(--card);border:1px solid var(--line);color:var(--fg);font-size:16px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+
+/* ---------- 3. PANTALLA: MOTOR DE PREDICCIONES (FORECASTING ENGINE) ---------- */
+#fc-book:checked ~ .wrap .seg-fc label[for="fc-book"],
+#fc-catchup:checked ~ .wrap .seg-fc label[for="fc-catchup"],
+#fc-cold:checked ~ .wrap .seg-fc label[for="fc-cold"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.fc-pane{display:none;padding:0 20px;flex:1}
+#fc-book:checked ~ .wrap .fc-pane-book,
+#fc-catchup:checked ~ .wrap .fc-pane-catchup,
+#fc-cold:checked ~ .wrap .fc-pane-cold{display:block}
+
+.eta-row{display:flex;gap:12px;align-items:center}
+.eta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.eta-metric{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.range-slider{width:100%;accent-color:var(--pri);margin:8px 0 4px;cursor:pointer}
+
+/* ---------- 4. PANTALLA: ESTADÍSTICAS AVANZADAS Y BACIBOOKS WRAPPED ---------- */
+#st-overview:checked ~ .wrap .seg-st label[for="st-overview"],
+#st-streak:checked ~ .wrap .seg-st label[for="st-streak"],
+#st-wrapped:checked ~ .wrap .seg-st label[for="st-wrapped"]{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.14)}
+
+.st-pane{display:none;padding:0 20px;flex:1}
+#st-overview:checked ~ .wrap .st-pane-overview,
+#st-streak:checked ~ .wrap .st-pane-streak,
+#st-wrapped:checked ~ .wrap .st-pane-wrapped{display:block}
+
+.dual-bar{display:flex;height:14px;border-radius:999px;overflow:hidden;margin:8px 0;background:var(--line)}
+.dual-phys{background:var(--pri);width:62%}
+.dual-dig{background:var(--acc);width:38%}
+
+.wk-chart{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:108px;padding:12px 6px 4px;background:var(--surf);border-radius:14px;border:1px solid var(--line);margin-top:8px}
+.wk-col{display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.wk-bar{width:100%;max-width:24px;background:var(--pri);border-radius:6px 6px 3px 3px;opacity:.75}
+.wk-bar.peak{background:var(--acc);opacity:1}
+.wk-lbl{font-size:12px;font-weight:700;color:var(--muted)}
+
+.streak-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.streak-badge{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:9px 8px;display:flex;align-items:center;gap:8px}
+.streak-icon-box{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.streak-icon-box.fire{background:rgba(184,95,48,.18);color:var(--acc)}
+.streak-icon-box.best{background:rgba(30,70,53,.18);color:var(--pri)}
+.streak-icon-box.shield{background:rgba(201,138,44,.2);color:var(--gold)}
+
+.shield-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:10px}
+.shield-dots{display:flex;gap:4px;align-items:center}
+.sh-dot{width:18px;height:18px;border-radius:6px;background:var(--pri);color:#FAF7F2;display:inline-flex;align-items:center;justify-content:center}
+
+.hm-table{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.hm-hdr-row,.hm-wk-row{display:grid;grid-template-columns:74px repeat(7,1fr);gap:5px;align-items:center}
+.hm-day-hdr{text-align:center;font-size:12px;font-weight:700;color:var(--muted)}
+.hm-wk-lbl{font-size:12px;font-weight:700;color:var(--muted);white-space:nowrap}
+.hm-wk-lbl.curr{color:var(--fg)}
+.hm-cell{aspect-ratio:1/1;border-radius:8px;background:var(--surf);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;position:relative;transition:transform .12s ease}
+.hm-cell:hover{transform:scale(1.06)}
+.hm-l1{background:rgba(30,70,53,.28);color:var(--fg);border-color:transparent}
+.hm-l2{background:rgba(30,70,53,.58);color:#FAF7F2;border-color:transparent}
+.hm-l3{background:var(--pri);color:#FAF7F2;border-color:transparent}
+.hm-shield{background:rgba(201,138,44,.22);border:2px solid var(--gold);color:var(--gold)}
+.hm-retro{background:rgba(184,95,48,.24);border:1.5px dashed var(--acc);color:var(--acc)}
+.hm-today{outline:2px solid var(--fg);outline-offset:1px}
+.hm-future{background:transparent;border:1px dashed var(--line);opacity:.45;cursor:default}
+.hm-inspector{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surf);border:1px solid var(--line);border-radius:11px;padding:7px 10px;margin-top:8px;font-size:12px}
+.hm-legend{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;font-size:12px;color:var(--muted)}
+.hm-leg-item{display:inline-flex;align-items:center;gap:5px}
+
+.wrapped-poster{background:linear-gradient(165deg,#1E4635 0%,#122A20 55%,#2B1B12 100%);color:#FAF7F2;border-radius:24px;padding:18px;border:1px solid rgba(255,255,255,.15);box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.wr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.wr-box{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px}
+.wr-big{font-size:20px;font-weight:800;color:#FAF7F2}
+.wr-sub{font-size:12px;color:rgba(250,247,242,.78)}
+
+/* Barra de navegación inferior */
+.dock{padding:10px 14px 14px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);align-items:center;gap:6px;background:var(--surf);border-radius:20px;padding:6px}
+.tab{min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--muted);border-radius:14px}
+.tab.on{color:var(--fg);background:var(--card);box-shadow:0 1px 3px rgba(0,0,0,.1)}
+</style>
+</head>
+<body>
+
+<!-- Radios principales de pantalla -->
+<input type="radio" name="screen" id="scr-timer" class="st" checked />
+<input type="radio" name="screen" id="scr-goals" class="st" />
+<input type="radio" name="screen" id="scr-forecast" class="st" />
+<input type="radio" name="screen" id="scr-stats" class="st" />
+
+<!-- Tema Día / Noche -->
+<input type="radio" name="theme" id="thm-day" class="st" checked />
+<input type="radio" name="theme" id="thm-night" class="st" />
+
+<!-- Sub-vistas de 1. Cronómetro -->
+<input type="radio" name="tmview" id="tm-active" class="st" checked />
+<input type="radio" name="tmview" id="tm-finish" class="st" />
+<input type="radio" name="tmview" id="tm-outlier" class="st" />
+
+<!-- Selector Hoy / Ayer en Cronómetro -->
+<input type="radio" name="rdate" id="dt-today" class="st" checked />
+<input type="radio" name="rdate" id="dt-yest" class="st" />
+
+<!-- Sub-vistas de 2. Metas -->
+<input type="radio" name="glview" id="gl-track" class="st" checked />
+<input type="radio" name="glview" id="gl-config" class="st" />
+
+<!-- Estados del Indicador de Ritmo (Pacing) -->
+<input type="radio" name="pacing" id="pace-ahead" class="st" checked />
+<input type="radio" name="pacing" id="pace-ontrack" class="st" />
+<input type="radio" name="pacing" id="pace-behind" class="st" />
+
+<!-- Sub-vistas de 3. Motor de Predicciones -->
+<input type="radio" name="fcview" id="fc-book" class="st" checked />
+<input type="radio" name="fcview" id="fc-catchup" class="st" />
+<input type="radio" name="fcview" id="fc-cold" class="st" />
+
+<!-- Sub-vistas de 4. Estadísticas y Wrapped -->
+<input type="radio" name="stview" id="st-overview" class="st" checked />
+<input type="radio" name="stview" id="st-streak" class="st" />
+<input type="radio" name="stview" id="st-wrapped" class="st" />
+
+<div class="wrap">
+
+  <!-- ===================== PANEL DE CONTROL DEL PROTOTIPO ===================== -->
+  <div class="chrome">
+    <div class="chrome-top">
+      <span class="tag">Fase 3 (v0.3.0) · Prototipo Interactivo</span>
+      <span>Auditoría UX / GPT</span>
+    </div>
+
+    <!-- Selector de los 4 módulos de la Fase 3 -->
+    <div class="tg-grid four">
+      <label for="scr-timer" class="tg">1. Cronómetro</label>
+      <label for="scr-goals" class="tg">2. Metas</label>
+      <label for="scr-forecast" class="tg">3. Predicciones</label>
+      <label for="scr-stats" class="tg">4. Estadísticas</label>
+    </div>
+
+    <!-- Selector de tema Día / Noche -->
+    <div class="tg-grid">
+      <label for="thm-day" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        Modo Día
+      </label>
+      <label for="thm-night" class="tg">
+        <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        Modo Noche
+      </label>
+    </div>
+
+    <!-- Sub-controles contextuales según pantalla -->
+    <div class="subpanel sp-timer">
+      <div class="subpanel-title"><span>Estado del Cronómetro:</span><span>Tiempo exacto</span></div>
+      <div class="tg-grid three">
+        <label for="tm-active" class="tg">En sesión</label>
+        <label for="tm-finish" class="tg">Guardar avance</label>
+        <label for="tm-outlier" class="tg">Sesión atípica</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-goals">
+      <div class="subpanel-title"><span>Vista de Metas:</span><span>Anual, Mensual y Diaria</span></div>
+      <div class="tg-grid">
+        <label for="gl-track" class="tg">Seguimiento y Ritmo</label>
+        <label for="gl-config" class="tg">Configurar Metas</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-forecast">
+      <div class="subpanel-title"><span>Motor de Predicciones:</span><span>Forecasting Engine</span></div>
+      <div class="tg-grid three">
+        <label for="fc-book" class="tg">ETA por Libro</label>
+        <label for="fc-catchup" class="tg">Catch-up / Mes</label>
+        <label for="fc-cold" class="tg">Ritmo inicial (0)</label>
+      </div>
+    </div>
+
+    <div class="subpanel sp-stats">
+      <div class="subpanel-title"><span>Dashboard de Estadísticas:</span><span>Analítica Lectora</span></div>
+      <div class="tg-grid three">
+        <label for="st-overview" class="tg">Físico vs Digital</label>
+        <label for="st-streak" class="tg">Racha y Escudo</label>
+        <label for="st-wrapped" class="tg">Wrapped</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MARCO DEL TELÉFONO ===================== -->
+  <div class="phone">
+
+    <!-- =====================================================================
+         1. CRONÓMETRO DE LECTURA PERSISTENTE POR TIMESTAMPS + OUTLIER GUARD
+         ===================================================================== -->
+    <div id="s-timer" class="scr">
+      <div>
+        <div class="sbar"><span>22:38</span><span>Viernes 6 de noviembre</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Cronómetro Lector</h1>
+            <p class="muted">Sigue contando con la pantalla apagada</p>
+          </div>
+          <span class="pill">28.4 págs/h media</span>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-tm">
+            <label for="tm-active">En curso</label>
+            <label for="tm-finish">Guardar sesión</label>
+            <label for="tm-outlier">Sesión atípica</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: SESIÓN EN CURSO (PERSISTENTE POR TIMESTAMPS) -->
+      <div class="tm-pane tm-pane-active">
+        <div class="card" style="padding:12px">
+          <div class="eta-row">
+            <div class="cv cv-sm c1"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <b style="font-size:15px" class="serif">Dune</b>
+                <span class="pill soft">Inicio: Pág. 142</span>
+              </div>
+              <div class="muted">Frank Herbert · Debolsillo · 412 págs. (34.5%)</div>
+              <div class="muted" style="margin-top:3px;color:var(--pri);font-weight:600">
+                ETA actual: 9h 30m restantes · Terminas el Mar 17 Nov
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="timer-dial">
+          <div class="timer-epoch">
+            <span class="pulse-dot" id="tm-dot"></span>
+            <span id="tm-status-txt">Timestamp activo · Pantalla apagada segura</span>
+          </div>
+          <div class="timer-digits mono" id="tm-clock">00:42:18</div>
+          <div class="muted" id="tm-sub-calc">
+            A tu velocidad media (28.4 págs/h), llevas aprox. ~20 páginas en esta sesión
+          </div>
+
+          <div class="timer-controls">
+            <button type="button" class="btn2" style="margin-top:0" onclick="toggleTimerPause()" id="btn-pause-resume">
+              <svg class="lucide" viewBox="0 0 24 24"><rect width="4" height="16" x="6" y="4"/><rect width="4" height="16" x="14" y="4"/></svg>
+              <span>Pausar reloj</span>
+            </button>
+            <button type="button" class="btn2" style="margin-top:0" onclick="addBackgroundMinutes(15)">
+              <svg class="lucide" viewBox="0 0 24 24"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+              <span>Simular +15m off</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="card-sub" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:12px">Hábito diario de lectura (30 min/día)</b>
+            <span class="pill" id="tm-daily-badge">Meta hoy cumplida (140%)</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:100%"></div></div>
+          <div class="muted">Se guarda con SafeButton e idempotencia transaccional en SQLite.</div>
+        </div>
+
+        <label for="tm-finish" class="cta acc">
+          <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Terminar sesión y anotar página final
+        </label>
+      </div>
+
+      <!-- SUB-VISTA B: FINALIZAR SESIÓN Y CÁLCULO DE VELOCIDAD EN VIVO -->
+      <div class="tm-pane tm-pane-finish">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <b style="font-size:15px">Cerrar sesión de lectura</b>
+              <div class="muted">Tiempo medido: <b id="fin-dur-lbl">42 min (0.70 h)</b></div>
+            </div>
+            <span class="pill" id="fin-speed-pill">34.1 págs/h</span>
+          </div>
+
+          <div class="direct-input-row">
+            <div>
+              <b style="font-size:13px;display:block">¿En qué página te quedaste?</b>
+              <span class="muted">Iniciaste en pág. 142 de 412</span>
+            </div>
+            <input
+              type="number"
+              min="142"
+              max="412"
+              value="166"
+              class="direct-input-field mono"
+              oninput="updateSessionFinish(this.value)"
+            />
+          </div>
+
+          <div class="goal-kpi-grid">
+            <div class="goal-kpi">
+              <div class="muted">Páginas avanzadas</div>
+              <div class="kpi-val mono" id="fin-pages-read">+24 págs.</div>
+              <div class="muted" id="fin-new-pct">Nuevo avance: 40.3%</div>
+            </div>
+            <div class="goal-kpi">
+              <div class="muted">Velocidad de sesión</div>
+              <div class="kpi-val mono" id="fin-speed-val">34.1 págs/h</div>
+              <div class="muted" id="fin-speed-cmp">+5.7 vs tu media</div>
+            </div>
+          </div>
+
+          <!-- Fecha local (Hoy vs Ayer) -->
+          <div class="retro-row">
+            <div>
+              <b style="font-size:12px;display:block">Fecha de lectura</b>
+              <span class="muted">Si leíste anoche antes de dormir, elige Ayer</span>
+            </div>
+            <div class="retro-pills">
+              <label for="dt-today" class="retro-pill">Hoy (06 Nov)</label>
+              <label for="dt-yest" class="retro-pill">Ayer (05 Nov)</label>
+            </div>
+          </div>
+        </div>
+
+        <label for="scr-forecast" class="cta">
+          <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Guardar sesión y actualizar predicciones
+        </label>
+        <label for="tm-outlier" class="btn2">Simular olvido de pausa (Ajustar tiempo)</label>
+      </div>
+
+      <!-- SUB-VISTA C: DETECTOR DE SESIONES ATÍPICAS (OUTLIER GUARD VISUAL Y COMPACTO) -->
+      <div class="tm-pane tm-pane-outlier">
+        <div class="outlier-box">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px">
+              <svg class="lucide" style="color:var(--danger)" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+              <b style="font-size:14px;color:var(--danger)">¿Olvidaste pausar el reloj?</b>
+            </div>
+            <span class="pill danger">0.8 págs/h</span>
+          </div>
+
+          <div class="outlier-strip mono">
+            <div class="outlier-stat">
+              <svg class="lucide lucide-sm" style="color:var(--danger)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span class="outlier-stat-val">5h 12m</span>
+              <span class="muted">Medido</span>
+            </div>
+            <div class="outlier-stat">
+              <svg class="lucide lucide-sm" style="color:var(--pri)" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+              <span class="outlier-stat-val">+4 págs.</span>
+              <span class="muted">142 a 146</span>
+            </div>
+            <div class="outlier-stat">
+              <svg class="lucide lucide-sm" style="color:var(--gold)" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+              <span class="outlier-stat-val">~9 min</span>
+              <span class="muted">A tu ritmo</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acción recomendada principal (1 toque) -->
+        <label for="scr-forecast" class="cta" style="min-height:54px;justify-content:space-between;padding:0 16px">
+          <span style="display:inline-flex;align-items:center;gap:8px">
+            <svg class="lucide" viewBox="0 0 24 24"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+            <span>Ajustar a 9 min y guardar +4 págs.</span>
+          </span>
+          <span class="pill soft" style="color:#1C1917;background:#FAF7F2">Ideal</span>
+        </label>
+
+        <!-- 2 opciones secundarias compactas con iconos -->
+        <div class="outlier-grid2">
+          <label for="scr-goals" class="opt-tile">
+            <div style="display:flex;align-items:center;gap:6px;color:var(--fg);font-weight:700;font-size:13px">
+              <svg class="lucide lucide-sm" style="color:var(--acc)" viewBox="0 0 24 24"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></svg>
+              Solo sumar +4 págs.
+            </div>
+            <span class="muted">Sin promediar velocidad</span>
+          </label>
+
+          <label for="tm-active" class="opt-tile">
+            <div style="display:flex;align-items:center;gap:6px;color:var(--fg);font-weight:700;font-size:13px">
+              <svg class="lucide lucide-sm" style="color:var(--pri)" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+              Dejar las 5h 12m
+            </div>
+            <span class="muted">Fue estudio denso</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-timer" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 3h6"/></svg>
+            Cronómetro
+          </label>
+          <label for="scr-goals" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Metas
+          </label>
+          <label for="scr-forecast" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Predicción
+          </label>
+          <label for="scr-stats" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10" rx="1"/><rect width="4" height="12" x="15" y="5" rx="1"/></svg>
+            Stats
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         2. CONFIGURADOR Y SEGUIMIENTO DE METAS (ANUAL, MENSUAL Y DIARIA)
+         ===================================================================== -->
+    <div id="s-goals" class="scr">
+      <div>
+        <div class="sbar"><span>22:38</span><span>Metas de Lectura · Día 310 de 365</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Mis Metas 2026</h1>
+            <p class="muted">Anual, Mensual y Hábito Diario con indicador de ritmo</p>
+          </div>
+          <label for="gl-config" class="pill">Editar metas</label>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg two seg-gl">
+            <label for="gl-track">Seguimiento y Ritmo</label>
+            <label for="gl-config">Configurar Metas</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: SEGUIMIENTO DE METAS E INDICADOR DE RITMO EN TIEMPO REAL -->
+      <div class="gl-pane gl-pane-track">
+        <div class="lbl" style="margin-top:0">Simular estado de ritmo (Pacing Indicator) <span>Toca para probar</span></div>
+        <div class="seg seg-pace" style="margin-bottom:10px">
+          <label for="pace-ahead">Adelantado</label>
+          <label for="pace-ontrack">En ritmo</label>
+          <label for="pace-behind">Atrasado</label>
+        </div>
+
+        <!-- Banner 1: Adelantado -->
+        <div class="pace-banner pb-ahead">
+          <svg class="lucide" style="margin-top:2px;color:var(--pri)" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+          <div>
+            <b style="font-size:13px">Vas Adelantado (+1.6 libros sobre el ritmo ideal)</b>
+            <div class="muted">Al 6 de noviembre debías llevar 18.4 libros y ya completaste <b>20 de 24</b>. Proyección de cierre: <b>26 libros</b>.</div>
+          </div>
+        </div>
+
+        <!-- Banner 2: En ritmo -->
+        <div class="pace-banner pb-ontrack">
+          <svg class="lucide" style="margin-top:2px;color:var(--fg)" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <div>
+            <b style="font-size:13px">Vas En Ritmo Ideal (Margen ±0.3 libros)</b>
+            <div class="muted">Manteniendo tu media móvil de <b>22 págs/día</b> cumplirás el 100% de tu meta anual el 28 de diciembre.</div>
+          </div>
+        </div>
+
+        <!-- Banner 3: Atrasado -->
+        <div class="pace-banner pb-behind">
+          <svg class="lucide" style="margin-top:2px;color:var(--acc)" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+          <div>
+            <b style="font-size:13px">Vas Atrasado (-1.2 libros respecto al día de hoy)</b>
+            <div class="muted">Ajuste dinámico (Catch-up): lee <b>22 págs/día</b> (~46 min) durante el resto del mes para recuperar el ritmo.</div>
+          </div>
+        </div>
+
+        <!-- Tarjeta 1: Meta Anual 2026 -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <b style="font-size:15px">Meta Anual 2026</b>
+              <div class="muted">Incluye propios (OWNED), prestados y relecturas</div>
+            </div>
+            <span class="pill">83.3% completado</span>
+          </div>
+          <div class="prog-track"><div class="prog-fill" style="width:83.3%"></div></div>
+          <div class="goal-kpi-grid">
+            <div class="goal-kpi">
+              <div class="muted">Libros terminados</div>
+              <div class="kpi-val mono">20 / 24</div>
+              <div class="muted">Faltan 4 libros (55 días)</div>
+            </div>
+            <div class="goal-kpi">
+              <div class="muted">Páginas anuales</div>
+              <div class="kpi-val mono">6,840 / 8,000</div>
+              <div class="muted">85.5% · Faltan 1,160 págs.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjeta 2: Meta Mensual (Noviembre) + Hábito Diario -->
+        <div class="card" style="margin-bottom:0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <b style="font-size:15px">Meta de Noviembre + Hábito Diario</b>
+              <div class="muted">Día 6 de 30 · Quedan 24 días en el mes</div>
+            </div>
+            <span class="pill acc">En progreso</span>
+          </div>
+          <div class="goal-kpi-grid">
+            <div class="goal-kpi">
+              <div class="muted">Noviembre (Libros / Págs)</div>
+              <div class="kpi-val mono">1 / 2 libros</div>
+              <div class="muted">310 / 650 págs. (47.7%)</div>
+            </div>
+            <div class="goal-kpi">
+              <div class="muted">Hábito de Hoy (06 Nov)</div>
+              <div class="kpi-val mono">42 / 30 min</div>
+              <div class="muted">24 / 20 págs. (Cumplido)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA B: CONFIGURADOR INTERACTIVO DE METAS -->
+      <div class="gl-pane gl-pane-config">
+        <div class="card">
+          <b style="font-size:15px;display:block">Configurar Metas Activas (READING_GOALS)</b>
+          <p class="muted" style="margin-top:2px">Ajusta tus objetivos; el motor recalcula tu cuota diaria al instante.</p>
+
+          <div class="stepper-row">
+            <div>
+              <b style="font-size:13px;display:block">Meta Anual de Libros (2026)</b>
+              <span class="muted" id="cfg-annual-sub">Equivale a 2.0 libros por mes</span>
+            </div>
+            <div class="stepper-btns">
+              <button type="button" class="step-btn" onclick="stepGoal('annBooks', -1)">-</button>
+              <span class="kpi-val mono" id="cfg-ann-books" style="min-width:34px;text-align:center">24</span>
+              <button type="button" class="step-btn" onclick="stepGoal('annBooks', 1)">+</button>
+            </div>
+          </div>
+
+          <div class="stepper-row">
+            <div>
+              <b style="font-size:13px;display:block">Meta Mensual de Páginas (Nov)</b>
+              <span class="muted" id="cfg-month-sub">Requiere ~22 págs/día este mes</span>
+            </div>
+            <div class="stepper-btns">
+              <button type="button" class="step-btn" onclick="stepGoal('monPages', -50)">-</button>
+              <span class="kpi-val mono" id="cfg-mon-pages" style="min-width:48px;text-align:center">650</span>
+              <button type="button" class="step-btn" onclick="stepGoal('monPages', 50)">+</button>
+            </div>
+          </div>
+
+          <div class="stepper-row">
+            <div>
+              <b style="font-size:13px;display:block">Hábito Diario (Minutos / día)</b>
+              <span class="muted" id="cfg-daily-sub">Activa tu racha y Escudo Semanal</span>
+            </div>
+            <div class="stepper-btns">
+              <button type="button" class="step-btn" onclick="stepGoal('dayMins', -5)">-</button>
+              <span class="kpi-val mono" id="cfg-day-mins" style="min-width:42px;text-align:center">30m</span>
+              <button type="button" class="step-btn" onclick="stepGoal('dayMins', 5)">+</button>
+            </div>
+          </div>
+        </div>
+
+        <label for="gl-track" class="cta">
+          <svg class="lucide" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          Guardar configuración de metas (Transaccional)
+        </label>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-timer" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 3h6"/></svg>
+            Cronómetro
+          </label>
+          <label for="scr-goals" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Metas
+          </label>
+          <label for="scr-forecast" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Predicción
+          </label>
+          <label for="scr-stats" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10" rx="1"/><rect width="4" height="12" x="15" y="5" rx="1"/></svg>
+            Stats
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         3. MOTOR DE PREDICCIONES (BOOK COMPLETION ETA, CATCH-UP Y COLD START)
+         ===================================================================== -->
+    <div id="s-forecast" class="scr">
+      <div>
+        <div class="sbar"><span>22:38</span><span>Forecasting Engine · Media móvil 14d</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Predicciones</h1>
+            <p class="muted">Proyección matemática por libro, mes y año</p>
+          </div>
+          <span class="pill">24.5 págs/día</span>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-fc">
+            <label for="fc-book">ETA por Libro</label>
+            <label for="fc-catchup">Catch-up / Mes</label>
+            <label for="fc-cold">Cold Start (0)</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: BOOK COMPLETION ETA + SIMULADOR INTERACTIVO -->
+      <div class="fc-pane fc-pane-book">
+        <!-- Libro activo 1: Físico -->
+        <div class="card">
+          <div class="eta-row">
+            <div class="cv cv-sm c1"><span class="sn">#1</span><span class="ct serif">Dune</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <b style="font-size:15px" class="serif">Dune</b>
+                <span class="pill">Físico · 34.5%</span>
+              </div>
+              <div class="muted">Pág. 142 de 412 · <b>Faltan 270 páginas</b></div>
+            </div>
+          </div>
+
+          <div class="eta-grid">
+            <div class="eta-metric">
+              <div class="muted">Tiempo neto restante</div>
+              <div class="kpi-val mono" id="eta-dune-hours">9h 30m</div>
+              <div class="muted">A 28.4 págs/hora</div>
+            </div>
+            <div class="eta-metric">
+              <div class="muted">Fecha estimada fin</div>
+              <div class="kpi-val" id="eta-dune-date" style="color:var(--pri)">Mar 17 Nov</div>
+              <div class="muted" id="eta-dune-days">En 11 días (a 25 págs/día)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Libro activo 2: Digital (por %) -->
+        <div class="card">
+          <div class="eta-row">
+            <div class="cv cv-sm c8"><span class="eb">eB</span><span class="ct serif">Hail Mary</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <b style="font-size:15px" class="serif">Proyecto Hail Mary</b>
+                <span class="pill soft">Kindle · 45.0%</span>
+              </div>
+              <div class="muted">Equivalente: 216 de 480 págs. · <b>Faltan 264 págs.</b></div>
+            </div>
+          </div>
+
+          <div class="eta-grid">
+            <div class="eta-metric">
+              <div class="muted">Tiempo neto restante</div>
+              <div class="kpi-val mono">8h 31m</div>
+              <div class="muted">A 31.0 págs/hora (eBook)</div>
+            </div>
+            <div class="eta-metric">
+              <div class="muted">Fecha estimada fin</div>
+              <div class="kpi-val" id="eta-hm-date" style="color:var(--acc)">Lun 16 Nov</div>
+              <div class="muted" id="eta-hm-days">En 10 días</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simulador interactivo de ritmo diario -->
+        <div class="card-sub">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:12px">Simulador: ¿Y si leo más cada día?</b>
+            <span class="pill" id="sim-pace-lbl">25 págs/día (~53 min)</span>
+          </div>
+          <input
+            type="range"
+            min="10"
+            max="60"
+            step="5"
+            value="25"
+            class="range-slider"
+            oninput="updateEtaSimulator(this.value)"
+          />
+          <div class="muted">Desliza para ver cómo cambia tu fecha de finalización de Dune y Proyecto Hail Mary.</div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA B: PROYECCIÓN DE CIERRE Y CATCH-UP CALCULATOR -->
+      <div class="fc-pane fc-pane-catchup">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:15px">Calculadora de Ajuste (Catch-up)</b>
+            <span class="pill acc">Noviembre 2026</span>
+          </div>
+          <p class="muted" style="margin-top:4px">
+            Para cumplir tu meta de <b>650 páginas en noviembre</b> (llevas 310 págs. al día 6, faltan 340 págs. en 24 días):
+          </p>
+
+          <div class="eta-grid">
+            <div class="eta-metric">
+              <div class="muted">Cuota diaria necesaria</div>
+              <div class="kpi-val mono" style="color:var(--acc)">15 págs/día</div>
+              <div class="muted">Del 7 al 30 de noviembre</div>
+            </div>
+            <div class="eta-metric">
+              <div class="muted">Tiempo diario requerido</div>
+              <div class="kpi-val mono">32 min/día</div>
+              <div class="muted">Según tus 28.4 págs/hora</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:15px">Proyección de Cierre Anual 2026</b>
+            <span class="pill">Superarás la meta</span>
+          </div>
+          <div class="card-sub">
+            <b style="font-size:13px;display:block">Cerrarás el año con ~26 libros (7,910 págs.)</b>
+            <p class="muted" style="margin-top:3px">
+              A tu ritmo promedio de las últimas 2 semanas (<b>24.5 págs/día</b>), alcanzarás tu libro #24 el <b>lunes 14 de diciembre</b>, 17 días antes de fin de año.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA C: ARRANQUE EN FRÍO (COLD START CON 0 SESIONES) -->
+      <div class="fc-pane fc-pane-cold">
+        <div class="card" style="border-color:var(--gold)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:15px">Modo Arranque en Frío (Cold Start)</b>
+            <span class="pill gold">0 sesiones previas</span>
+          </div>
+          <p class="muted" style="margin-top:6px">
+            Cuando el usuario abre BaciBooks el Día 1 y aún tiene <b>0 sesiones en READING_SESSIONS</b>, el motor evita divisiones entre cero (NaN) aplicando constantes iniciales calibradas:
+          </p>
+
+          <div class="eta-grid">
+            <div class="eta-metric">
+              <div class="muted">Velocidad base inicial</div>
+              <div class="kpi-val mono">25 págs/hora</div>
+              <div class="muted">Constante Cold Start</div>
+            </div>
+            <div class="eta-metric">
+              <div class="muted">Hábito diario base</div>
+              <div class="kpi-val mono">20 págs/día</div>
+              <div class="muted">~48 min/día estimados</div>
+            </div>
+          </div>
+
+          <div class="card-sub">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <b style="font-size:12px">Ejemplo en tarjeta del libro (Día 1)</b>
+              <span class="pill soft">Estimación inicial</span>
+            </div>
+            <p class="muted" style="margin-top:4px">
+              "Te quedan aprox. <b>10h 48m</b> de lectura (estimación inicial a 25 págs/h). Registra tu primera sesión con el cronómetro para personalizar tu velocidad real."
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-timer" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 3h6"/></svg>
+            Cronómetro
+          </label>
+          <label for="scr-goals" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Metas
+          </label>
+          <label for="scr-forecast" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Predicción
+          </label>
+          <label for="scr-stats" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10" rx="1"/><rect width="4" height="12" x="15" y="5" rx="1"/></svg>
+            Stats
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- =====================================================================
+         4. DASHBOARD DE ESTADÍSTICAS AVANZADAS, RACHA Y BACIBOOKS WRAPPED
+         ===================================================================== -->
+    <div id="s-stats" class="scr">
+      <div>
+        <div class="sbar"><span>22:38</span><span>Analítica Local-First · 0ms</span></div>
+        <div class="hdr">
+          <div>
+            <h1 class="h1 serif">Estadísticas</h1>
+            <p class="muted">Físicos vs Digitales, ritmo semanal, racha y Wrapped</p>
+          </div>
+          <label for="st-wrapped" class="pill acc">Ver Wrapped</label>
+        </div>
+
+        <div style="padding:0 20px 10px">
+          <div class="seg seg-st">
+            <label for="st-overview">Físico / Semanal</label>
+            <label for="st-streak">Racha y Escudo</label>
+            <label for="st-wrapped">Wrapped</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA A: COMPARATIVA FÍSICOS VS DIGITALES Y RITMO POR DÍA DE LA SEMANA -->
+      <div class="st-pane st-pane-overview">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <b style="font-size:15px">Libros Físicos vs. Digitales (2026)</b>
+            <span class="pill soft">20 libros · 6,840 págs.</span>
+          </div>
+          <div class="dual-bar">
+            <div class="dual-phys"></div>
+            <div class="dual-dig"></div>
+          </div>
+          <div class="goal-kpi-grid">
+            <div class="goal-kpi">
+              <div class="muted">Físicos (PHYSICAL · 62%)</div>
+              <div class="kpi-val mono">12 libros</div>
+              <div class="muted">4,210 págs. · 27.2 págs/h</div>
+            </div>
+            <div class="goal-kpi">
+              <div class="muted">Digitales (DIGITAL · 38%)</div>
+              <div class="kpi-val mono">8 eBooks</div>
+              <div class="muted">2,630 págs. · 31.0 págs/h</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:0">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <b style="font-size:15px">Ritmo por Día de la Semana</b>
+              <div class="muted">Tu día más lector es el <b>Domingo (42 págs. prom.)</b></div>
+            </div>
+            <span class="pill">Dom +68%</span>
+          </div>
+
+          <div class="wk-chart">
+            <div class="wk-col"><div class="wk-bar" style="height:42%"></div><span class="wk-lbl">L</span></div>
+            <div class="wk-col"><div class="wk-bar" style="height:50%"></div><span class="wk-lbl">M</span></div>
+            <div class="wk-col"><div class="wk-bar" style="height:38%"></div><span class="wk-lbl">X</span></div>
+            <div class="wk-col"><div class="wk-bar" style="height:56%"></div><span class="wk-lbl">J</span></div>
+            <div class="wk-col"><div class="wk-bar" style="height:64%"></div><span class="wk-lbl">V</span></div>
+            <div class="wk-col"><div class="wk-bar peak" style="height:84%"></div><span class="wk-lbl">S</span></div>
+            <div class="wk-col"><div class="wk-bar peak" style="height:100%"></div><span class="wk-lbl">D</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA B: MAPA DE CALOR CON ICONOS Y GUÍA DE SEMANAS / DÍAS -->
+      <div class="st-pane st-pane-streak">
+        <div class="card" style="margin-bottom:0">
+          <!-- Tira visual de 3 indicadores con iconos vectoriales -->
+          <div class="streak-strip">
+            <div class="streak-badge">
+              <div class="streak-icon-box fire">
+                <svg class="lucide" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+              </div>
+              <div>
+                <b style="font-size:15px;display:block" class="mono">18d</b>
+                <span class="muted">Racha</span>
+              </div>
+            </div>
+
+            <div class="streak-badge">
+              <div class="streak-icon-box best">
+                <svg class="lucide" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+              </div>
+              <div>
+                <b style="font-size:15px;display:block" class="mono">34d</b>
+                <span class="muted">Récord</span>
+              </div>
+            </div>
+
+            <div class="streak-badge">
+              <div class="streak-icon-box shield">
+                <svg class="lucide" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div>
+                <b style="font-size:15px;display:block" class="mono">1 / 1</b>
+                <span class="muted">Escudo</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Barra visual de recarga semanal del escudo (con iconos en vez de párrafo) -->
+          <div class="shield-bar">
+            <div style="display:flex;align-items:center;gap:6px">
+              <svg class="lucide lucide-sm" style="color:var(--gold)" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              <span style="font-size:12px;font-weight:700">Escudo semanal listo</span>
+            </div>
+            <div class="shield-dots" title="5 de 5 días de meta semanal cumplidos">
+              <span class="sh-dot"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="sh-dot"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="sh-dot"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="sh-dot"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span class="sh-dot"><svg class="lucide lucide-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+            </div>
+          </div>
+
+          <!-- Guía de Semanas (Filas) y Días de la Semana (Columnas L a D) -->
+          <div class="hm-table mono">
+            <div class="hm-hdr-row">
+              <span class="hm-wk-lbl">Semana</span>
+              <span class="hm-day-hdr">L</span>
+              <span class="hm-day-hdr">M</span>
+              <span class="hm-day-hdr">X</span>
+              <span class="hm-day-hdr">J</span>
+              <span class="hm-day-hdr">V</span>
+              <span class="hm-day-hdr">S</span>
+              <span class="hm-day-hdr">D</span>
+            </div>
+
+            <!-- Semana 1: 12 al 18 Oct -->
+            <div class="hm-wk-row">
+              <span class="hm-wk-lbl">12–18 Oct</span>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Lun 12 Oct','14 págs. · 28 min')">14</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Mar 13 Oct','24 págs. · 49 min')">24</div>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Mié 14 Oct','16 págs. · 32 min')">16</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Jue 15 Oct','28 págs. · 55 min')">28</div>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Vie 16 Oct','15 págs. · 30 min')">15</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Sáb 17 Oct','40 págs. · 1h 22m')">40</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Dom 18 Oct','46 págs. · 1h 35m')">46</div>
+            </div>
+
+            <!-- Semana 2: 19 al 25 Oct (Con Escudo el Miércoles 21 Oct) -->
+            <div class="hm-wk-row">
+              <span class="hm-wk-lbl">19–25 Oct</span>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Lun 19 Oct','22 págs. · 45 min')">22</div>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Mar 20 Oct','14 págs. · 29 min')">14</div>
+              <div class="hm-cell hm-shield" onclick="inspectHeatDay('Mié 21 Oct','Escudo de Racha aplicado (0 págs.)')" title="Protegido con Escudo">
+                <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              </div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Jue 22 Oct','28 págs. · 58 min')">28</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Vie 23 Oct','25 págs. · 51 min')">25</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Sáb 24 Oct','42 págs. · 1h 26m')">42</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Dom 25 Oct','50 págs. · 1h 44m')">50</div>
+            </div>
+
+            <!-- Semana 3: 26 Oct al 01 Nov -->
+            <div class="hm-wk-row">
+              <span class="hm-wk-lbl">26–01 Nov</span>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Lun 26 Oct','18 págs. · 37 min')">18</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Mar 27 Oct','26 págs. · 52 min')">26</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Mié 28 Oct','21 págs. · 44 min')">21</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Jue 29 Oct','24 págs. · 48 min')">24</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Vie 30 Oct','30 págs. · 1h 02m')">30</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Sáb 31 Oct','38 págs. · 1h 18m')">38</div>
+              <div class="hm-cell hm-l3" onclick="inspectHeatDay('Dom 01 Nov','44 págs. · 1h 31m')">44</div>
+            </div>
+
+            <!-- Semana 4: 02 al 08 Nov (Semana actual, Jue 05 registrado como Ayer, Vie 06 Hoy) -->
+            <div class="hm-wk-row">
+              <span class="hm-wk-lbl curr">02–08 Nov</span>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Lun 02 Nov','22 págs. · 46 min')">22</div>
+              <div class="hm-cell hm-l1" onclick="inspectHeatDay('Mar 03 Nov','16 págs. · 34 min')">16</div>
+              <div class="hm-cell hm-l2" onclick="inspectHeatDay('Mié 04 Nov','28 págs. · 58 min')">28</div>
+              <div class="hm-cell hm-retro" onclick="inspectHeatDay('Jue 05 Nov','20 págs. · Registrado como Ayer')" title="Registrado con selector Ayer">
+                <svg class="lucide lucide-sm" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+              </div>
+              <div class="hm-cell hm-l3 hm-today" onclick="inspectHeatDay('Vie 06 Nov (Hoy)','24 págs. · 42 min con cronómetro')">24</div>
+              <div class="hm-cell hm-future">·</div>
+              <div class="hm-cell hm-future">·</div>
+            </div>
+          </div>
+
+          <!-- Guía interactiva del día seleccionado -->
+          <div class="hm-inspector">
+            <span style="display:inline-flex;align-items:center;gap:6px;font-weight:700" id="hm-insp-date">
+              <svg class="lucide lucide-sm" style="color:var(--pri)" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+              <span>Vie 06 Nov (Hoy)</span>
+            </span>
+            <span class="muted" id="hm-insp-val">24 págs. · 42 min (Toca un día)</span>
+          </div>
+
+          <!-- Leyenda visual con iconos vectoriales -->
+          <div class="hm-legend">
+            <span class="hm-leg-item">
+              <svg class="lucide lucide-sm" style="color:var(--gold)" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              Escudo
+            </span>
+            <span class="hm-leg-item">
+              <svg class="lucide lucide-sm" style="color:var(--acc)" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Registro Ayer
+            </span>
+            <span class="hm-leg-item">
+              <span style="width:10px;height:10px;border-radius:3px;background:var(--pri);display:inline-block"></span>
+              Hoy (Borde)
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB-VISTA C: TARJETA RESUMEN COMPARTIBLE (BACIBOOKS WRAPPED) -->
+      <div class="st-pane st-pane-wrapped">
+        <div class="wrapped-poster">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="pill gold" style="color:#FAF7F2;border-color:#E9A23B">BACIBOOKS WRAPPED · 2026</span>
+            <span class="wr-sub mono">v0.3.0</span>
+          </div>
+          <h2 class="serif" style="font-size:21px;margin-top:8px">Mi Año entre Páginas</h2>
+          <p class="wr-sub">Resumen verificado con cronómetro local-first</p>
+
+          <div class="wr-grid">
+            <div class="wr-box">
+              <div class="wr-big mono">20 Libros</div>
+              <div class="wr-sub">12 Físicos · 8 eBooks</div>
+            </div>
+            <div class="wr-box">
+              <div class="wr-big mono">6,840 Págs</div>
+              <div class="wr-sub">Equiv. a 16 novelas</div>
+            </div>
+            <div class="wr-box">
+              <div class="wr-big mono">241 Horas</div>
+              <div class="wr-sub">Velocidad: 28.4 págs/h</div>
+            </div>
+            <div class="wr-box">
+              <div class="wr-big mono">34 Días</div>
+              <div class="wr-sub">Mejor racha continua</div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.25);border-radius:14px;padding:10px 12px">
+            <div>
+              <div class="wr-sub">Editorial y Autor más leídos</div>
+              <b style="font-size:13px">Minotauro / Debolsillo · Frank Herbert</b>
+            </div>
+            <div style="display:flex;gap:6px">
+              <div class="cv cv-sm c1" style="width:36px;flex:0 0 36px;padding:4px"><span class="ct serif" style="font-size:12px">Dune</span></div>
+              <div class="cv cv-sm c6" style="width:36px;flex:0 0 36px;padding:4px"><span class="ct serif" style="font-size:12px">Ray</span></div>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="cta acc" style="margin-top:10px">
+          <svg class="lucide" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" x2="12" y1="2" y2="15"/></svg>
+          Compartir tarjeta BaciBooks Wrapped (PNG)
+        </button>
+      </div>
+
+      <!-- Barra inferior -->
+      <div class="dock">
+        <div class="tabs">
+          <label for="scr-timer" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M9 3h6"/></svg>
+            Cronómetro
+          </label>
+          <label for="scr-goals" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            Metas
+          </label>
+          <label for="scr-forecast" class="tab">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+            Predicción
+          </label>
+          <label for="scr-stats" class="tab on">
+            <svg class="lucide lucide-tab" viewBox="0 0 24 24"><path d="M3 3v18h18"/><rect width="4" height="7" x="7" y="10" rx="1"/><rect width="4" height="12" x="15" y="5" rx="1"/></svg>
+            Stats
+          </label>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// Estado interactivo del cronómetro simulado por timestamps
+var elapsedSeconds = 42 * 60 + 18;
+var isPaused = false;
+
+function formatHMS(totalSec) {
+  var h = Math.floor(totalSec / 3600);
+  var m = Math.floor((totalSec % 3600) / 60);
+  var s = totalSec % 60;
+  return (
+    String(h).padStart(2, '0') + ':' +
+    String(m).padStart(2, '0') + ':' +
+    String(s).padStart(2, '0')
+  );
+}
+
+function renderTimerReadout() {
+  var clockEl = document.getElementById('tm-clock');
+  var subEl = document.getElementById('tm-sub-calc');
+  var finDurEl = document.getElementById('fin-dur-lbl');
+  if (clockEl) clockEl.textContent = formatHMS(elapsedSeconds);
+  var estPages = Math.max(1, Math.round((elapsedSeconds / 3600) * 28.4));
+  if (subEl) {
+    subEl.textContent =
+      'A tu velocidad media (28.4 págs/h), llevas aprox. ~' +
+      estPages +
+      ' páginas en esta sesión';
+  }
+  if (finDurEl) {
+    var mins = Math.round(elapsedSeconds / 60);
+    var hrs = (elapsedSeconds / 3600).toFixed(2);
+    finDurEl.textContent = mins + ' min (' + hrs + ' h)';
+  }
+}
+
+setInterval(function () {
+  if (!isPaused) {
+    elapsedSeconds += 1;
+    renderTimerReadout();
+  }
+}, 1000);
+
+function toggleTimerPause() {
+  isPaused = !isPaused;
+  var dot = document.getElementById('tm-dot');
+  var txt = document.getElementById('tm-status-txt');
+  var btn = document.getElementById('btn-pause-resume');
+  if (isPaused) {
+    if (dot) dot.style.background = '#C98A2C';
+    if (txt) txt.textContent = 'Sesión en pausa · Tiempo acumulado seguro';
+    if (btn) btn.innerHTML = '<span>Reanudar reloj</span>';
+  } else {
+    if (dot) dot.style.background = '#16803C';
+    if (txt) txt.textContent = 'Timestamp activo · Pantalla apagada segura';
+    if (btn) btn.innerHTML = '<span>Pausar reloj</span>';
+  }
+}
+
+function addBackgroundMinutes(mins) {
+  elapsedSeconds += mins * 60;
+  renderTimerReadout();
+  updateSessionFinish(166);
+}
+
+function updateSessionFinish(endPageVal) {
+  var endP = Math.max(142, Math.min(412, Number(endPageVal) || 142));
+  var delta = endP - 142;
+  var hours = Math.max(0.1, elapsedSeconds / 3600);
+  var speed = (delta / hours).toFixed(1);
+  var pct = ((endP / 412) * 100).toFixed(1);
+  var diff = (Number(speed) - 28.4).toFixed(1);
+  var sign = Number(diff) >= 0 ? '+' : '';
+
+  var pagesEl = document.getElementById('fin-pages-read');
+  var pctEl = document.getElementById('fin-new-pct');
+  var speedValEl = document.getElementById('fin-speed-val');
+  var speedPillEl = document.getElementById('fin-speed-pill');
+  var cmpEl = document.getElementById('fin-speed-cmp');
+
+  if (pagesEl) pagesEl.textContent = '+' + delta + ' págs.';
+  if (pctEl) pctEl.textContent = 'Nuevo avance: ' + pct + '%';
+  if (speedValEl) speedValEl.textContent = speed + ' págs/h';
+  if (speedPillEl) speedPillEl.textContent = speed + ' págs/h';
+  if (cmpEl) cmpEl.textContent = sign + diff + ' vs tu media';
+}
+
+// Configurador de metas
+var goalsState = { annBooks: 24, monPages: 650, dayMins: 30 };
+function stepGoal(key, delta) {
+  if (key === 'annBooks') {
+    goalsState.annBooks = Math.max(1, goalsState.annBooks + delta);
+    document.getElementById('cfg-ann-books').textContent = String(goalsState.annBooks);
+    document.getElementById('cfg-annual-sub').textContent =
+      'Equivale a ' + (goalsState.annBooks / 12).toFixed(1) + ' libros por mes';
+  } else if (key === 'monPages') {
+    goalsState.monPages = Math.max(100, goalsState.monPages + delta);
+    document.getElementById('cfg-mon-pages').textContent = String(goalsState.monPages);
+    document.getElementById('cfg-month-sub').textContent =
+      'Requiere ~' + Math.ceil(goalsState.monPages / 30) + ' págs/día este mes';
+  } else if (key === 'dayMins') {
+    goalsState.dayMins = Math.max(10, goalsState.dayMins + delta);
+    document.getElementById('cfg-day-mins').textContent = goalsState.dayMins + 'm';
+  }
+}
+
+// Simulador de ETA por libro activo
+function updateEtaSimulator(pagesPerDay) {
+  var p = Number(pagesPerDay) || 25;
+  var minsPerDay = Math.round((p / 28.4) * 60);
+  document.getElementById('sim-pace-lbl').textContent =
+    p + ' págs/día (~' + minsPerDay + ' min)';
+
+  var daysDune = Math.ceil(270 / p);
+  var daysHm = Math.ceil(264 / p);
+
+  var baseDate = new Date(2026, 10, 6);
+  var duneDate = new Date(baseDate.getTime() + daysDune * 86400000);
+  var hmDate = new Date(baseDate.getTime() + daysHm * 86400000);
+
+  var fmt = function (d) {
+    return d.toLocaleDateString('es-ES', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+    });
+  };
+
+  document.getElementById('eta-dune-date').textContent = fmt(duneDate);
+  document.getElementById('eta-dune-days').textContent =
+    'En ' + daysDune + ' días (a ' + p + ' págs/día)';
+  document.getElementById('eta-hm-date').textContent = fmt(hmDate);
+  document.getElementById('eta-hm-days').textContent = 'En ' + daysHm + ' días';
+}
+
+// Inspector interactivo de celdas del mapa de calor
+function inspectHeatDay(dateStr, detailStr) {
+  var dEl = document.getElementById('hm-insp-date');
+  var vEl = document.getElementById('hm-insp-val');
+  if (dEl) dEl.textContent = dateStr;
+  if (vEl) vEl.textContent = detailStr;
+}
+</script>
+</body>
+</html>
+

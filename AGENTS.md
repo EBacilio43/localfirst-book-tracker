@@ -94,9 +94,16 @@ Para evitar registros duplicados, condiciones de carrera o llamadas dobles a las
    - Todo botón de acción debe utilizar el componente estándar `SafeButton` (o el hook `useSafePress`) que:
      - Bloquea instantáneamente nuevos toques mediante referencia síncrona (`isLockedRef.current = true`) desde el primer milisegundo (sin esperar al re-render de React).
      - Muestra estado visual de carga (`isSubmitting`) y aplica un *cooldown/debounce* mínimo de `500ms` tras finalizar la acción.
-2. **Deduplicación en el Escáner de Cámara (Modo Individual y Ráfaga):**
+2. **Skeletons Obligatorios en Pantallas de Carga (`Skeleton` / `Shimmer`):**
+   - Queda prohibido mostrar pantallas en blanco o depender únicamente de un `ActivityIndicator` genérico durante la carga inicial de pantallas, cuadrículas de portadas, estanterías, listas de búsqueda o fichas de detalle.
+   - Todas las pantallas deben utilizar componentes `Skeleton` con animación de pulso suave (`src/shared/components/Skeleton.tsx`) que respeten la geometría exacta del contenido final (proporción `2:3` de portadas, píldoras de estado y bloques de metadatos) para eliminar saltos bruscos de interfaz (*CLS / Layout Shift*).
+3. **Debounce Obligatorio en Búsquedas (`useDebouncedValue`):**
+   - Toda barra de búsqueda o filtro por texto debe implementar *debounce* mediante el hook estándar `useDebouncedValue` (`src/shared/hooks/useDebouncedValue.ts`) antes de ejecutar consultas:
+     - **Búsquedas locales (`SQLite FTS5` / estanterías / biblioteca):** ventana de `250ms` a `300ms` (con limpieza inmediata a `0ms` al vaciar el campo) para evitar bloquear el hilo de UI mientras el usuario escribe.
+     - **Búsquedas remotas o con IA (Google Books, Open Library, Detective Literario Gemini):** ventana de `400ms` a `500ms` más control de cancelación contra respuestas fuera de orden para proteger la cuota de APIs.
+4. **Deduplicación en el Escáner de Cámara (Modo Individual y Ráfaga):**
    - La cámara lee códigos de barras a 30-60 fps. El módulo `scanner` debe mantener un `Map<string, number>` de códigos recién leídos con una ventana de enfriamiento (*cooldown*) de **`3,000 ms` por ISBN** y verificar contra SQLite antes de agregar un libro a la cola o consultar las APIs.
-3. **Idempotencia en Base de Datos (SQLite) y Reglas Técnicas Críticas:**
+5. **Idempotencia en Base de Datos (SQLite) y Reglas Técnicas Críticas:**
    - Las operaciones de creación críticas (guardar libro, registrar sesión de cronómetro, crear meta mensual/anual) deben ejecutarse dentro de transacciones y permitir múltiples ediciones de un mismo ISBN solo tras confirmación explícita del usuario.
    - **Agrupación por Sagas (`series_name` + `series_index`):** La biblioteca soporta agrupar libros por saga en orden numérico (`#1`, `#1.5`, `#2`) mostrando el progreso de la saga, y la Ruleta TBR jamás debe sugerir un tomo posterior si existe un tomo previo sin leer.
    - **Cronómetro por Timestamps y Rachas en Zona Horaria Local:** El cronómetro debe persistir `started_at_epoch_ms` (nunca depender de `setInterval` en memoria al apagar la pantalla), y cada sesión debe registrar `local_date ('YYYY-MM-DD')` en el huso horario local del dispositivo.
@@ -134,8 +141,9 @@ Para evitar registros duplicados, condiciones de carrera o llamadas dobles a las
 ## 6. Flujo de Trabajo en Git, Fases y Estándares para Portafolio GitHub
 
 ### Estrategia de Ramas (Git Flow Ligero por Fases)
-- `main`: Rama de producción estable. Solo recibe merges al completar cada Fase, etiquetada con **SemVer** (`v0.1.0` Fase 1, `v0.2.0` Fase 2, etc.).
-- `develop`: Rama principal de integración donde se unen las ramas de funcionalidades terminadas y probadas.
+- `main`: Rama de producción estable. Solo recibe código mediante **Pull Request (PR)** desde `develop` al completar cada Fase, etiquetada con **SemVer** (`v0.1.0` Fase 1, `v0.2.0` Fase 2, etc.).
+- `develop`: Rama principal de integración donde se unen las ramas de funcionalidades terminadas y probadas **exclusivamente mediante Pull Request (PR)**.
+- **Regla Estricta de Integración por PR:** Queda estrictamente prohibido realizar `git merge` directo en local hacia `develop` o `main`. Todo agente o desarrollador debe hacer `git push` únicamente de la rama de trabajo (`feat/...`, `fix/...`, `docs/...`) a los remotos para que la integración hacia `develop` y `main` se realice **siempre y únicamente a través de un Pull Request en GitHub**.
 - **Ramas de trabajo (creadas desde `develop`):**
   - `feat/<modulo>-<descripcion-corta>` (ej. `feat/escaner-modo-rafaga`, `feat/metas-motor-predicciones`).
   - `fix/<modulo>-<descripcion-corta>` (ej. `fix/ui-bloqueo-doble-toque`).
@@ -163,4 +171,13 @@ Queda estrictamente prohibido el uso de emojis en cualquier parte del proyecto B
 2. **En la Comunicación y Respuestas:** El asistente y los desarrolladores jamás deben incluir emojis en los mensajes del chat, explicaciones técnicas, resúmenes de estado ni revisiones de código.
 3. **En Commits y Control de Versiones:** Prohibido incluir emojis en los títulos o descripciones de los commits de Git (`git commit`) y en las etiquetas de versión (`git tag`).
 4. **En Documentación:** Prohibido utilizar emojis en archivos Markdown (`README.md`, `PLAN_MAESTRO_BACIBOOKS.md`, especificaciones, etc.). Toda la documentación debe mantener un tono técnico, formal y sobrio.
+
+---
+
+## 8. Regla Estricta de Lenguaje Humano y Editorial (Cero Jerga Técnica en la UI)
+
+La aplicación está dirigida a lectores, no a ingenieros de software. Queda estrictamente prohibido mostrar términos técnicos, nombres de formatos internos, banderas de base de datos o siglas de arquitectura en cualquier texto visible para el usuario final (tanto en el código React Native como en los prototipos visuales):
+- **Prohibido mostrar en la UI:** `FTS5`, `SQLite`, `Zod`, `Debounce`, `280ms / 450ms`, `.webp`, `archivos huérfanos`, `depurar`, `EXIF`, `PENDING_OFFLINE_SYNC`, `schemaVersion`, `signInSilently`, `OAuth`, `drive.appdata`, `updated_at / deleted_at`, `isbn_contributions`, `useEntitlements`, `shouldShowAds`, `Outlier Guard`, `EMA`, `TBR`, `JSON / Snapshot determinista`, `Supabase` o `ML Kit`.
+- **Lenguaje obligatorio en la UI:** Usar siempre expresiones naturales, cálidas y comprensibles para cualquier lector (ej. *"En mi biblioteca"*, *"Liberar espacio de portadas no usadas"*, *"Libros escaneados sin internet"*, *"Respaldo en Google Drive"*, *"¿Qué leo hoy?"*, *"Revisar tiempo de lectura"*).
+
 

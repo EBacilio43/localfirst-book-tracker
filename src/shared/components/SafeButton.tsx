@@ -27,6 +27,7 @@ export interface SafeButtonProps {
   textStyle?: StyleProp<TextStyle>;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  testID?: string;
 }
 
 export function SafeButton({
@@ -42,6 +43,7 @@ export function SafeButton({
   textStyle,
   leftIcon,
   rightIcon,
+  testID,
 }: SafeButtonProps) {
   const { handlePress, isSubmitting } = useSafePress(onPress, { cooldownMs });
   const busy = isLoading || isSubmitting;
@@ -65,6 +67,7 @@ export function SafeButton({
 
   return (
     <Pressable
+      testID={testID}
       onPress={handlePress}
       disabled={isButtonDisabled}
       style={({ pressed }) => [
