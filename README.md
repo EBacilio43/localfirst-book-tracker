@@ -88,7 +88,7 @@ BaciBooks/
 - [x] **Fase 0:** Arquitectura, prototipo interactivo de pantallas y auditoría técnica 360° ([AGENTS.md](AGENTS.md)).
 - [x] **Fase 1 (`v0.1.0`):** Cimientos de ingeniería, SQLite + Drizzle, Escáner ISBN exacto (Individual y Ráfaga), y estantería de libros físicos y digitales.
 - [x] **Fase 2 (`v0.2.0`):** Ciclo completo de estados de lectura, organización por ubicación física, Sagas y Ruleta TBR.
-- [ ] **Fase 3 (`v0.3.0`):** Cronómetro por timestamps, metas mensual/anual y motor de predicciones de lectura.
+- [x] **Fase 3 (`v0.3.0`):** Cronómetro por timestamps, metas mensual/anual y motor de predicciones de lectura.
 - [ ] **Fase 4 (`v0.4.0`):** Búsqueda Inteligente con IA (Gemini), escáner OCR de citas y control de préstamos.
 - [ ] **Fase 5 (`v1.0.0`):** Sincronización híbrida (Google Drive + Supabase) y despliegue en Google Play Store / App Store.
 
