@@ -1,4 +1,4 @@
-# BaciBooks
+# LocalFirst Book Tracker
 
 > **Tu biblioteca física y digital unificada, con portadas reales, motor de lectura inteligente y arquitectura Local-First.**
 
@@ -14,7 +14,7 @@
 
 ## Visión General
 
-**BaciBooks** es una aplicación móvil multiplataforma (*Android e iOS*) diseñada para resolver la mayor frustración de los lectores al digitalizar su biblioteca personal: **registrar la edición exacta que tienen en sus manos (con su editorial y portada real)** en segundos, ya sean libros físicos o libros digitales (*eBooks*).
+**LocalFirst Book Tracker** es una aplicación móvil multiplataforma (*Android e iOS*) diseñada para resolver la mayor frustración de los lectores al digitalizar su biblioteca personal: **registrar la edición exacta que tienen en sus manos (con su editorial y portada real)** en segundos, ya sean libros físicos o libros digitales (*eBooks*).
 
 Construida bajo una filosofía **Local-First**, la aplicación funciona **al 100% sin conexión a internet** dentro de librerías, ferias del libro o en modo avión, y sincroniza de forma segura y privada los respaldos del lector con su propia nube personal a **costo $0 USD**.
 
@@ -104,8 +104,8 @@ BaciBooks/
 ### Instalación
 ```bash
 # Clonar el repositorio
-git clone https://github.com/EBacilio43/bacibooks-app.git
-cd bacibooks-app
+git clone https://github.com/EBacilio43/localfirst-book-tracker.git
+cd localfirst-book-tracker
 
 # Instalar dependencias
 npm install
