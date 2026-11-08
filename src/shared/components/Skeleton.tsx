@@ -346,6 +346,61 @@ export const CloudSyncSkeleton: React.FC = () => {
   );
 };
 
+/**
+ * Skeleton para la ficha de confirmación y selección de portadas al escanear un código de barras.
+ * Ofrece retroalimentación visual inmediata con animación de pulso mientras se consultan las APIs de catálogo.
+ */
+export const BookScanBottomCardSkeleton: React.FC<{ isbn?: string }> = ({ isbn }) => {
+  return (
+    <View style={styles.scanSkeletonContainer} testID="book-scan-bottom-skeleton">
+      {/* Ficha principal: Portada y metadatos */}
+      <View style={styles.scanCandidateRow}>
+        <SkeletonBox width={64} height={96} borderRadius={8} />
+        <View style={styles.scanCandidateInfo}>
+          <SkeletonBox width="85%" height={18} borderRadius={6} />
+          <SkeletonBox width="60%" height={14} borderRadius={5} style={styles.mt6} />
+          <SkeletonBox width="45%" height={12} borderRadius={4} style={styles.mt6} />
+          <View style={[styles.scanPublisherSkeletonRow, styles.mt8]}>
+            <SkeletonBox width={50} height={12} borderRadius={4} />
+            <SkeletonBox width={110} height={24} borderRadius={6} />
+          </View>
+        </View>
+      </View>
+
+      {/* Tira del carrusel de portadas alternativas */}
+      <View style={styles.scanCarouselSection}>
+        <SkeletonBox width={170} height={14} borderRadius={5} />
+        <View style={styles.scanCarouselRow}>
+          <SkeletonBox width={76} height={114} borderRadius={8} />
+          <SkeletonBox width={76} height={114} borderRadius={8} />
+          <SkeletonBox width={76} height={114} borderRadius={8} />
+          <SkeletonBox width={76} height={114} borderRadius={8} />
+        </View>
+      </View>
+
+      {/* Formato y destino */}
+      <View style={styles.scanSectionRow}>
+        <SkeletonBox width={130} height={14} borderRadius={5} />
+        <View style={styles.scanToggleRow}>
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+        </View>
+      </View>
+
+      <View style={styles.scanSectionRow}>
+        <SkeletonBox width={120} height={14} borderRadius={5} />
+        <View style={styles.scanToggleRow}>
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+          <SkeletonBox width="48%" height={38} borderRadius={10} />
+        </View>
+      </View>
+
+      {/* Botón de confirmación */}
+      <SkeletonBox width="100%" height={48} borderRadius={12} style={styles.mt12} />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
   baseBox: {
     backgroundColor: colors.light.border,
@@ -506,6 +561,38 @@ const styles = StyleSheet.create({
   },
   mt4: {
     marginTop: 4,
+  },
+  scanSkeletonContainer: {
+    paddingTop: 8,
+    gap: 16,
+  },
+  scanCandidateRow: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'center',
+  },
+  scanCandidateInfo: {
+    flex: 1,
+  },
+  scanPublisherSkeletonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  scanCarouselSection: {
+    gap: 10,
+  },
+  scanCarouselRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  scanSectionRow: {
+    gap: 8,
+  },
+  scanToggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
   },
 });
 

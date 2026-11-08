@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BaciBooks — Showcase Visual y Breve</title>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 12mm 10mm 12mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #FFFFFF;
+      color: #1A1816;
+      font-size: 9pt;
+      line-height: 1.35;
+    }
+    
+    :root {
+      --pri: #143828;
+      --pri-rich: #1E4635;
+      --pri-light: #EBF3EE;
+      --acc: #B85F30;
+      --acc-vibrant: #C95B24;
+      --acc-light: #FBF0EB;
+      --gold: #C28522;
+      --gold-light: #FDF5E6;
+      --blue: #1D58D8;
+      --blue-light: #EFF6FF;
+      --dark: #12100E;
+      --card-bg: #FCFAF7;
+      --surface: #F5EFE6;
+      --line: #E5DFC8;
+      --line-subtle: #ECE6DC;
+      --muted: #57524D;
+      --subtle: #7A746E;
+    }
+
+    .page {
+      height: 275mm;
+      max-height: 275mm;
+      position: relative;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      padding: 2mm 0;
+    }
+    .page:last-child {
+      page-break-after: auto;
+    }
+
+    /* Encabezado */
+    .header {
+      border-bottom: 2px solid var(--pri-rich);
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .brand {
+      font-size: 18pt;
+      font-weight: 900;
+      color: var(--pri);
+      letter-spacing: -0.6px;
+    }
+    .tagline {
+      font-size: 9pt;
+      color: var(--acc-vibrant);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .page-tag {
+      font-size: 8pt;
+      background: var(--surface);
+      color: var(--pri-rich);
+      border: 1px solid var(--line);
+      padding: 3px 10px;
+      border-radius: 99px;
+      font-weight: 700;
+    }
+
+    /* Pie de Pagina */
+    .footer {
+      border-top: 1px solid var(--line-subtle);
+      padding-top: 6px;
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8pt;
+      color: var(--subtle);
+    }
+    .footer strong {
+      color: var(--pri-rich);
+    }
+
+    .body-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* Banners Principales Limpios */
+    .hero-card {
+      background: linear-gradient(135deg, #143828 0%, #1E4635 100%);
+      color: #FFFFFF;
+      border-radius: 12px;
+      padding: 16px 20px;
+      box-shadow: 0 4px 14px rgba(20, 56, 40, 0.12);
+    }
+    .hero-kicker {
+      font-size: 8pt;
+      font-weight: 800;
+      color: #E2A078;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+    .hero-title {
+      font-size: 21pt;
+      font-weight: 900;
+      color: #FFFFFF;
+      letter-spacing: -0.6px;
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .hero-sub {
+      font-size: 9.5pt;
+      color: #E2EFE7;
+      max-width: 580px;
+      line-height: 1.4;
+    }
+
+    /* Pildoras de Caracteristicas */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 7.8pt;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 8px;
+      border-radius: 5px;
+    }
+    .pill-pri { background: #1E4635; color: #FFFFFF; }
+    .pill-acc { background: #B85F30; color: #FFFFFF; }
+    .pill-gold { background: #C28522; color: #FFFFFF; }
+    .pill-blue { background: #1D58D8; color: #FFFFFF; }
+    .pill-green { background: #DCFCE7; color: #166534; }
+
+    /* Grillas y Tarjetas */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--line-subtle);
+      border-radius: 10px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-pri { border-left: 4px solid var(--pri-rich); }
+    .card-acc { border-left: 4px solid var(--acc-vibrant); }
+    .card-gold { border-left: 4px solid var(--gold); }
+    .card-blue { border-left: 4px solid var(--blue); }
+
+    .card-title {
+      font-size: 11pt;
+      font-weight: 800;
+      color: var(--dark);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .bullet-list li {
+      font-size: 8.5pt;
+      color: #383431;
+      position: relative;
+      padding-left: 14px;
+      line-height: 1.35;
+    }
+    .bullet-list li::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 6px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--acc-vibrant);
+    }
+    .bullet-list.pri li::before { background: var(--pri-rich); }
+    .bullet-list.gold li::before { background: var(--gold); }
+    .bullet-list.blue li::before { background: var(--blue); }
+
+    /* Maqueta Visual Phone Frame Limpia */
+    .phone-box {
+      background: #FFFFFF;
+      border: 2.5px solid #282420;
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .phone-bar {
+      display: flex;
+      justify-content: space-between;
+      font-size: 8pt;
+      font-weight: 700;
+      color: var(--subtle);
+      border-bottom: 1px solid var(--line-subtle);
+      padding-bottom: 4px;
+    }
+    .book-banner {
+      background: #FAF7F2;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    .book-cover {
+      width: 48px;
+      height: 70px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #1E4635, #357257);
+      color: #FFFFFF;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+    }
+    .book-cover-title {
+      font-size: 7.5pt;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .book-cover-sub {
+      font-size: 6pt;
+      opacity: 0.85;
+    }
+    .book-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .track-bar {
+      width: 100%;
+      height: 6px;
+      background: #E5DFD4;
+      border-radius: 99px;
+      overflow: hidden;
+      margin: 5px 0;
+    }
+    .track-fill {
+      height: 100%;
+      background: var(--acc-vibrant);
+      border-radius: 99px;
+    }
+
+    .btn-mock {
+      background: var(--pri);
+      color: #FFFFFF;
+      font-size: 8.5pt;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 8px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* Iconos SVG Inline */
+    .icon {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
+    /* Tabla Visual Limpia */
+    .clean-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8.5pt;
+    }
+    .clean-table th, .clean-table td {
+      border: 1px solid var(--line-subtle);
+      padding: 7px 10px;
+      text-align: left;
+    }
+    .clean-table th {
+      background: var(--surface);
+      color: var(--pri);
+      font-weight: 800;
+      font-size: 8.5pt;
+    }
+    .clean-table tr:nth-child(even) td {
+      background: #FAF8F5;
+    }
+    .clean-table .winner {
+      font-weight: 800;
+      color: var(--pri-rich);
+      background: #EAF4EE !important;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 8px;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 14pt;
+      font-weight: 900;
+      color: var(--pri);
+    }
+    .stat-label {
+      font-size: 7.5pt;
+      color: var(--subtle);
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======================================================== -->
+  <!-- PAGINA 1: PRESENTACION EN 10 SEGUNDOS -->
+  <!-- ======================================================== -->
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="brand">BaciBooks</div>
+        <div class="tagline">Tu Biblioteca Personal Inteligente</div>
+      </div>
+      <div class="page-tag">Pagina 1 de 3 &bull; En 10 Segundos</div>
+    </div>
+
+    <div class="body-content">
+      <!-- Banner Hero Conciso -->
+      <div class="hero-card">
+        <div class="hero-kicker">Revolucion Lectora</div>
+        <div class="hero-title">Todo lo que un lector sono, en una sola app</div>
+        <div class="hero-sub">
+          Gestiona libros fisicos y digitales con velocidad extrema. Sin publicidad, sin suscripciones y con funcionamiento 100% sin internet.
+        </div>
+      </div>
+
+      <!-- 3 Grandes Pilares Visuales -->
+      <div class="grid-3">
+        <div class="stat-box">
+          <div class="stat-number">60 fps</div>
+          <div class="stat-label">Escaner ultra veloz</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Sin necesidad de red</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">$0 USD</div>
+          <div class="stat-label">Sin pagos ocultos</div>
+        </div>
+      </div>
+
+      <!-- Showcase Pantalla Principal y Beneficios Clave -->
+      <div class="grid-2" style="align-items: center;">
+        <!-- Maqueta Minimalista del Telefono -->
+        <div class="phone-box">
+          <div class="phone-bar">
+            <span>BaciBooks Inicio</span>
+            <span class="pill pill-green">14 dias en racha</span>
+          </div>
+
+          <div class="book-banner">
+            <div class="book-cover">
+              <span class="book-cover-title">Cien Anos de Soledad</span>
+              <span class="book-cover-sub">G. Marquez</span>
+            </div>
+            <div class="book-details">
+              <div style="font-size: 7pt; font-weight: 800; color: var(--acc-vibrant); text-transform: uppercase;">Lectura Activa</div>
+              <div style="font-size: 9.5pt; font-weight: 800; color: var(--dark);">Cien Anos de Soledad</div>
+              <div style="font-size: 7.8pt; color: var(--subtle); margin-bottom: 2px;">Pag. 273 de 471 (58%)</div>
+              <div class="track-bar">
+                <div class="track-fill" style="width: 58%;"></div>
+              </div>
+              <div style="font-size: 7.5pt; color: var(--acc-vibrant); font-weight: 700;">Terminas en ~4 dias</div>
+            </div>
+          </div>
+
+          <div class="btn-mock">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            Iniciar Cronometro con un Toque
+          </div>
+
+          <div style="background: var(--surface); border-radius: 6px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 8pt; font-weight: 700; color: var(--dark);">Ruleta "¿Que leo hoy?"</span>
+            <span class="pill pill-gold" style="font-size: 7pt;">Girar</span>
+          </div>
+        </div>
+
+        <!-- 3 Puntos Fuertes sin Relleno -->
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div class="card card-pri">
+            <div class="card-title">
+              <span>Todo al Alcance de tu Pulgar</span>
+              <span class="pill pill-pri">Ergonomico</span>
+            </div>
+            <ul class="bullet-list pri">
+              <li>Maneja toda la aplicacion con una mano mientras sostienes tu libro.</li>
+              <li>Accede al cronometro y a tu lectura activa en un solo toque.</li>
+              <li>Proteccion total contra toques dobles accidentales.</li>
+            </ul>
+          </div>
+
+          <div class="card card-acc">
+            <div class="card-title">
+              <span>Soporte Dual: Papel y eBooks</span>
+              <span class="pill pill-acc">Completo</span>
+            </div>
+            <ul class="bullet-list">
+              <li><strong>Libros fisicos:</strong> formato de edicion y repisa exacta de tu casa.</li>
+              <li><strong>Libros digitales:</strong> avance por porcentaje para Kindle y eReaders.</li>
+              <li>Deteccion automatica de sagas ordenadas por tomo (#1, #2, #3).</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>BaciBooks Mobile &bull; Showcase Visual</div>
+      <div><strong>Simple, Rapido y al Grano</strong> &bull; v1.0 Oficial</div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- PAGINA 2: LAS 4 FUNCIONES ESTRELLA -->
+  <!-- ======================================================== -->
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="brand">BaciBooks</div>
+        <div class="tagline">Las 4 Funciones Estrella</div>
+      </div>
+      <div class="page-tag">Pagina 2 de 3 &bull; Caracteristicas Clave</div>
+    </div>
+
+    <div class="body-content">
+      <div style="border-bottom: 1px solid var(--line-subtle); padding-bottom: 6px;">
+        <h2 style="font-size: 14pt; font-weight: 900; color: var(--pri);">Las Herramientas que Hacen Unica a BaciBooks</h2>
+        <p style="font-size: 8.5pt; color: var(--muted); margin-top: 2px;">Cuatro soluciones disenadas especificamente para resolver los problemas reales de los lectores.</p>
+      </div>
+
+      <!-- Cuadricula 2x2 de Funciones Estrella -->
+      <div class="grid-2" style="flex: 1; align-content: stretch;">
+        <!-- Funcion 1: Escaner Rafaga -->
+        <div class="card card-acc">
+          <div class="card-title">
+            <span>1. Escaner en Modo Rafaga</span>
+            <span class="pill pill-acc">Super Veloz</span>
+          </div>
+          <ul class="bullet-list">
+            <li><strong>Escaneo continuo sin pausas:</strong> Apunta a 20 libros seguidos de tu estante sin tocar la pantalla; se van guardando en fila.</li>
+            <li><strong>Portadas reales en alta definicion:</strong> Descarga la portada oficial y la editorial exacta de tu edicion.</li>
+            <li><strong>Rescate con Inteligencia Artificial:</strong> Si tu libro es muy raro o antiguo, la IA recupera sus datos al instante.</li>
+          </ul>
+        </div>
+
+        <!-- Funcion 2: Mi Librero y Ruleta -->
+        <div class="card card-pri">
+          <div class="card-title">
+            <span>2. Mi Librero y Ruleta TBR</span>
+            <span class="pill pill-pri">Inteligente</span>
+          </div>
+          <ul class="bullet-list pri">
+            <li><strong>Repisas de tu hogar:</strong> Asigna la ubicacion fisica (*"Librero sala - Repisa 2"*) para encontrar cualquier ejemplar en segundos.</li>
+            <li><strong>6 estados claros:</strong> Por leer, Leyendo, En pausa, Leido, Abandonado y Lista de Deseos con precios.</li>
+            <li><strong>Ruleta que respeta sagas:</strong> Jamas te recomendara el tomo 2 si todavia no has terminado el tomo 1.</li>
+          </ul>
+        </div>
+
+        <!-- Funcion 3: Cronometro y Predicciones -->
+        <div class="card card-gold">
+          <div class="card-title">
+            <span>3. Habitos y Predicciones</span>
+            <span class="pill pill-gold">Matematico</span>
+          </div>
+          <ul class="bullet-list gold">
+            <li><strong>Inmune a pantalla apagada:</strong> Apaga el movil o toma llamadas; el cronometro sigue midiendo tu tiempo real.</li>
+            <li><strong>Registro retroactivo ("Lei anoche"):</strong> Anota lecturas de noche con fecha de ayer y no pierdas tu racha.</li>
+            <li><strong>Fecha estimada de finalizacion:</strong> Calcula tus paginas por hora y te dice el dia exacto en que terminaras el libro.</li>
+          </ul>
+        </div>
+
+        <!-- Funcion 4: Detective IA y Citas OCR -->
+        <div class="card card-blue">
+          <div class="card-title">
+            <span>4. Detective IA y Citas OCR</span>
+            <span class="pill pill-blue">Magia Pura</span>
+          </div>
+          <ul class="bullet-list blue">
+            <li><strong>Detective de libros por trama:</strong> ¿Olvidaste el titulo? Describe retazos de la historia y la IA te entrega el libro.</li>
+            <li><strong>Escaner de citas con la camara:</strong> Apunta a la pagina fisica y digitaliza el texto al instante sin teclear.</li>
+            <li><strong>Glosario anti-spoilers:</strong> Consulta personajes con notas desenfocadas para proteger el final de la trama.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Banner de Resumen Rapido -->
+      <div style="background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;">
+        <span style="font-size: 8.5pt; font-weight: 800; color: var(--pri);">Todo funciona en tu dispositivo sin necesidad de conexion a internet.</span>
+        <span class="pill pill-pri">100% Offline</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>BaciBooks Mobile &bull; Showcase Visual</div>
+      <div><strong>Cuatro Modulos Principales</strong> &bull; v1.0 Oficial</div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- PAGINA 3: COMPARATIVA DIRECTA Y CONTROL TOTAL -->
+  <!-- ======================================================== -->
+  <div class="page">
+    <div class="header">
+      <div>
+        <div class="brand">BaciBooks</div>
+        <div class="tagline">Por que BaciBooks Supera al Resto</div>
+      </div>
+      <div class="page-tag">Pagina 3 de 3 &bull; Comparativa Directa</div>
+    </div>
+
+    <div class="body-content">
+      <div style="border-bottom: 1px solid var(--line-subtle); padding-bottom: 6px;">
+        <h2 style="font-size: 14pt; font-weight: 900; color: var(--pri);">BaciBooks frente a las Apps Tradicionales</h2>
+        <p style="font-size: 8.5pt; color: var(--muted); margin-top: 2px;">Una comparativa clara para entender por que es la opcion superior para lectores.</p>
+      </div>
+
+      <!-- Tabla Comparativa Breve y al Grano -->
+      <table class="clean-table">
+        <thead>
+          <tr>
+            <th style="width: 28%;">Funcion</th>
+            <th style="width: 36%;" class="winner">BaciBooks</th>
+            <th style="width: 36%;">Otras Apps (Goodreads, etc.)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Escaner de Libros</strong></td>
+            <td class="winner">Modo Rafaga continuo a 60 fps</td>
+            <td>Lento, libro por libro con pausas</td>
+          </tr>
+          <tr>
+            <td><strong>Portadas Reales</strong></td>
+            <td class="winner">Alta definicion oficial + Rescate con IA</td>
+            <td>Portadas genericas o vacias</td>
+          </tr>
+          <tr>
+            <td><strong>Ruleta "¿Que leo hoy?"</strong></td>
+            <td class="winner">Inteligente: Respeta orden de sagas</td>
+            <td>No existe o elige al azar sin logica</td>
+          </tr>
+          <tr>
+            <td><strong>Cronometro de Lectura</strong></td>
+            <td class="winner">Inmune a pantalla apagada</td>
+            <td>Se pausa al salir o agota la bateria</td>
+          </tr>
+          <tr>
+            <td><strong>Prediccion de Fecha Fin</strong></td>
+            <td class="winner">Calcula dia y hora exacta de termino</td>
+            <td>No calcula proyecciones de lectura</td>
+          </tr>
+          <tr>
+            <td><strong>Busqueda por Memoria</strong></td>
+            <td class="winner">Detective con IA (busca por trama)</td>
+            <td>Solo busca por titulo o autor exacto</td>
+          </tr>
+          <tr>
+            <td><strong>Captura de Citas</strong></td>
+            <td class="winner">Escaner OCR con camara en segundos</td>
+            <td>Obliga a escribir a mano letra por letra</td>
+          </tr>
+          <tr>
+            <td><strong>Privacidad y Publicidad</strong></td>
+            <td class="winner">Cero publicidad, 100% privado en tu Drive</td>
+            <td>Saturado de anuncios y venta de datos</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 2 Cajas de Cierre de Seguridad y Portabilidad -->
+      <div class="grid-2">
+        <div class="card card-pri" style="padding: 10px 12px;">
+          <div style="font-size: 9.5pt; font-weight: 800; color: var(--pri); margin-bottom: 3px;">Control de Prestamos</div>
+          <div style="font-size: 8pt; color: var(--muted); line-height: 1.35;">
+            Registra a quien prestaste tus libros y que libros te prestaron, con fechas y recordatorios para nunca mas perder un ejemplar.
+          </div>
+        </div>
+
+        <div class="card card-acc" style="padding: 10px 12px;">
+          <div style="font-size: 9.5pt; font-weight: 800; color: var(--acc-vibrant); margin-bottom: 3px;">Migracion en 1 Clic</div>
+          <div style="font-size: 8pt; color: var(--muted); line-height: 1.35;">
+            Importa todo tu historial desde Goodreads o StoryGraph en un solo paso y respalda tu biblioteca en tu propio Google Drive.
+          </div>
+        </div>
+      </div>
+
+      <!-- Banner de Cierre Promocional -->
+      <div style="background: linear-gradient(135deg, #143828, #1E4635); color: #FFFFFF; border-radius: 10px; padding: 12px 16px; text-align: center;">
+        <div style="font-size: 11pt; font-weight: 900; letter-spacing: -0.3px;">BaciBooks: La aplicacion que tu biblioteca personal merece.</div>
+        <div style="font-size: 8pt; color: #D1E4DA; margin-top: 2px;">Rapida &bull; Precisa &bull; Inteligente &bull; 100% Enfocada en el Lector</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>BaciBooks Mobile &bull; Showcase Visual</div>
+      <div><strong>Resumen Ejecutivo en 3 Paginas</strong> &bull; v1.0 Oficial</div>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -7,6 +7,7 @@ export interface NormalizedBookCandidate {
   publisher?: string;
   description?: string;
   coverUri?: string;
+  alternativeCovers?: string[];
   pageCount: number;
   language: string;
   publishedYear?: number;
