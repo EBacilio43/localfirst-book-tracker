@@ -495,13 +495,27 @@ export default function BookDetailScreen() {
       setIsLoading(true);
       const result = await CatalogResolver.resolveByIsbn(book.isbn13);
       if (result.success && result.book) {
+        const finalCover =
+          result.book.coverUri ||
+          (book.coverUri?.includes('books.google.com/books/content')
+            ? null
+            : book.coverUri);
+
+        const finalPublisher =
+          result.book.publisher &&
+          result.book.publisher !== 'Editorial no especificada'
+            ? result.book.publisher
+            : book.publisher !== 'Editorial no especificada'
+            ? book.publisher
+            : null;
+
         await BooksRepository.update(book.id, {
           title: result.book.title,
           subtitle: result.book.subtitle,
           authorsJson: JSON.stringify(result.book.authors),
-          publisher: result.book.publisher || book.publisher,
+          publisher: finalPublisher,
           description: result.book.description || book.description,
-          coverUri: result.book.coverUri || book.coverUri,
+          coverUri: finalCover,
           pageCount:
             result.book.pageCount > 0 ? result.book.pageCount : book.pageCount,
           metadataStatus: 'COMPLETE',
@@ -598,15 +612,29 @@ export default function BookDetailScreen() {
           <ArrowLeft size={22} color={colors.light.text} />
         </Pressable>
 
-        <Pressable
-          onPress={confirmDelete}
-          hitSlop={12}
-          style={styles.iconButton}
-          accessibilityRole="button"
-          accessibilityLabel="Eliminar libro"
-        >
-          <Trash2 size={20} color={colors.light.danger} />
-        </Pressable>
+        <View style={styles.topBarActions}>
+          {book.isbn13 ? (
+            <Pressable
+              onPress={handleRetrySyncMetadata}
+              hitSlop={12}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Sincronizar información desde catálogos"
+            >
+              <RefreshCw size={19} color={colors.light.textMuted} />
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={confirmDelete}
+            hitSlop={12}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar libro"
+          >
+            <Trash2 size={20} color={colors.light.danger} />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -1174,6 +1202,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: colors.light.borderSubtle,
+  },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   iconButton: {
     padding: 8,
