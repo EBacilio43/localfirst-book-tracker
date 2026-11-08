@@ -38,40 +38,46 @@ export class CatalogResolver {
     const googleBook = googleResult.status === 'fulfilled' ? googleResult.value : null;
     const openLibBook = openLibResult.status === 'fulfilled' ? openLibResult.value : null;
 
+    let finalBook: NormalizedBookCandidate;
+
     if (!googleBook && !openLibBook) {
       // 3. Fallback inteligente con Gemini si las APIs tradicionales no lo tienen
       const geminiBook = await this.resolveWithGeminiFallback(isbn13);
       if (geminiBook) {
+        finalBook = geminiBook;
+      } else {
         return {
-          success: true,
-          book: geminiBook,
-          candidatesCount: 1,
+          success: false,
+          book: null,
+          error: 'NOT_FOUND_OR_OFFLINE',
+          candidatesCount: 0,
         };
       }
-
-      return {
-        success: false,
-        book: null,
-        error: 'NOT_FOUND_OR_OFFLINE',
-        candidatesCount: 0,
-      };
+    } else if (googleBook && openLibBook) {
+      finalBook = this.mergeCandidates(googleBook, openLibBook);
+    } else {
+      finalBook = googleBook || openLibBook!;
     }
 
-    // Fusión de campos si ambos respondieron
-    if (googleBook && openLibBook) {
-      const mergedBook = this.mergeCandidates(googleBook, openLibBook);
-      return {
-        success: true,
-        book: mergedBook,
-        candidatesCount: 2,
-      };
+    // Garantizar portada si el catalogo no la proveyo
+    if (!finalBook.coverUri) {
+      const fallbackCover = await this.resolveCoverUri(
+        isbn13,
+        finalBook.title,
+        finalBook.authors?.[0]
+      );
+      if (fallbackCover) {
+        finalBook = {
+          ...finalBook,
+          coverUri: fallbackCover,
+        };
+      }
     }
 
-    const singleBook = googleBook || openLibBook!;
     return {
       success: true,
-      book: singleBook,
-      candidatesCount: 1,
+      book: finalBook,
+      candidatesCount: googleBook && openLibBook ? 2 : 1,
     };
   }
 
@@ -187,5 +193,65 @@ export class CatalogResolver {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * Resuelve la portada en alta resolución consultando endpoints directos
+   * de Open Library y Google Books si el proveedor de metadatos no la incluyó.
+   */
+  static async resolveCoverUri(
+    isbn13: string,
+    title?: string,
+    author?: string
+  ): Promise<string | undefined> {
+    const cleanIsbn = isbn13.replace(/[-\s]/g, '');
+
+    // 1. Endpoint directo de Open Library por ISBN
+    try {
+      const olRes = await fetch(
+        `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg?default=false`,
+        { method: 'HEAD' }
+      );
+      if (olRes.ok) {
+        return `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
+      }
+    } catch {
+      // fallback silencioso
+    }
+
+    // 2. Endpoint directo de Google Books por ISBN
+    try {
+      const gbUrl = `https://books.google.com/books/content?vid=isbn${cleanIsbn}&printsec=frontcover&img=1&zoom=1`;
+      const gbRes = await fetch(gbUrl, { method: 'HEAD' });
+      const len = parseInt(gbRes.headers.get('content-length') || '0', 10);
+      if (gbRes.ok && len > 2500) {
+        return gbUrl;
+      }
+    } catch {
+      // fallback silencioso
+    }
+
+    // 3. Búsqueda por título y autor en Open Library Search API
+    if (title && title !== 'Sin título') {
+      try {
+        const queryParams = new URLSearchParams({ title });
+        if (author && author !== 'Autor desconocido') {
+          queryParams.append('author', author);
+        }
+        const sRes = await fetch(
+          `https://openlibrary.org/search.json?${queryParams.toString()}`
+        );
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          if (sData.docs && sData.docs.length > 0 && sData.docs[0].cover_i) {
+            return `https://covers.openlibrary.org/b/id/${sData.docs[0].cover_i}-L.jpg`;
+          }
+        }
+      } catch {
+        // fallback silencioso
+      }
+    }
+
+    return undefined;
   }
 }
