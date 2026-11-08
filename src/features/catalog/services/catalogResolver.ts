@@ -39,6 +39,16 @@ export class CatalogResolver {
     const openLibBook = openLibResult.status === 'fulfilled' ? openLibResult.value : null;
 
     if (!googleBook && !openLibBook) {
+      // 3. Fallback inteligente con Gemini si las APIs tradicionales no lo tienen
+      const geminiBook = await this.resolveWithGeminiFallback(isbn13);
+      if (geminiBook) {
+        return {
+          success: true,
+          book: geminiBook,
+          candidatesCount: 1,
+        };
+      }
+
       return {
         success: false,
         book: null,
@@ -108,5 +118,74 @@ export class CatalogResolver {
       publishedYear: google.publishedYear || openLib.publishedYear,
       source: 'MERGED',
     };
+  }
+
+  /**
+   * Resuelve libros por ISBN usando Gemini 3.8 Flash como tercer nivel de rescate
+   * cuando las APIs tradicionales no cuentan con el ejemplar.
+   */
+  static async resolveWithGeminiFallback(
+    isbn13: string
+  ): Promise<NormalizedBookCandidate | null> {
+    const apiKey =
+      typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_GEMINI_API_KEY;
+    if (!apiKey) return null;
+
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(
+        apiKey
+      )}`;
+      const prompt = `Identifica el libro con ISBN ${isbn13}. Responde UNICAMENTE con un objeto JSON valido con los campos: "title" (string o null si no existe), "subtitle" (string o null), "authors" (array de strings), "publisher" (string o null), "pageCount" (number o 0), "description" (string o null), "publishedYear" (number o null).`;
+
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.1,
+          },
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timer);
+
+      if (!res.ok) return null;
+      const data = await res.json();
+      const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!rawText) return null;
+
+      const parsed = JSON.parse(rawText);
+      if (!parsed.title) return null;
+
+      return {
+        isbn13,
+        title: parsed.title,
+        subtitle: parsed.subtitle || undefined,
+        authors:
+          Array.isArray(parsed.authors) && parsed.authors.length > 0
+            ? parsed.authors
+            : ['Autor desconocido'],
+        publisher: parsed.publisher || undefined,
+        description: parsed.description || undefined,
+        pageCount:
+          typeof parsed.pageCount === 'number' && parsed.pageCount > 0
+            ? parsed.pageCount
+            : 0,
+        publishedYear:
+          typeof parsed.publishedYear === 'number'
+            ? parsed.publishedYear
+            : undefined,
+        language: 'es',
+        source: 'MERGED',
+      };
+    } catch {
+      return null;
+    }
   }
 }
