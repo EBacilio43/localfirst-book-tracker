@@ -1,6 +1,7 @@
 import { GoogleBooksResponseSchema } from '../schemas/apiSchemas';
 import { NormalizedBookCandidate } from '../types';
 import { normalizeTitle, ensureHttpsCoverUrl } from '../utils/textNormalization';
+import { API_KEYS } from '@/core/config/apiKeys';
 
 export class GoogleBooksService {
   private static readonly BASE_URL = 'https://www.googleapis.com/books/v1/volumes';
@@ -10,10 +11,7 @@ export class GoogleBooksService {
    */
   static async searchByIsbn(isbn: string, timeoutMs: number = 6000): Promise<NormalizedBookCandidate | null> {
     const cleanIsbn = isbn.replace(/[-\s]/g, '');
-    const apiKey =
-      typeof process !== 'undefined' && process.env
-        ? process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY
-        : undefined;
+    const apiKey = API_KEYS.googleBooks;
 
     const url = apiKey
       ? `${this.BASE_URL}?q=isbn:${cleanIsbn}&key=${encodeURIComponent(apiKey)}`

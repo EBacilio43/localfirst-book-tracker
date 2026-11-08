@@ -9,11 +9,20 @@ const LOWERCASE_WORDS = new Set([
 
 /**
  * Corrige títulos escritos íntegramente en MAYÚSCULAS SOSTENIDAS (comunes en catálogos antiguos)
- * convirtiéndolos a Title Case legible en español. Si el título ya tiene minúsculas, lo respeta.
+ * convirtiéndolos a Title Case legible en español y elimina colas bilingües de exportación
+ * comunes en Google Books (ej. "Título en Español / English Title").
  */
 export function normalizeTitle(title: string): string {
   if (!title) return '';
-  const trimmed = title.trim();
+  let trimmed = title.trim();
+
+  // Eliminar colas de catálogos de exportación bilingüe ("Título en Español / English Title")
+  if (trimmed.includes(' / ')) {
+    const parts = trimmed.split(' / ');
+    if (parts.length === 2 && parts[0].trim().length > 0) {
+      trimmed = parts[0].trim();
+    }
+  }
 
   // Si no está completamente en mayúsculas, devolvemos el título original limpio
   const isAllCaps = trimmed === trimmed.toUpperCase() && /[A-ZÁÉÍÓÚÑ]/.test(trimmed);

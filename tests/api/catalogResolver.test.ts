@@ -9,6 +9,8 @@ jest.mock('../../src/features/catalog/services/openLibraryService');
 describe('CatalogResolver Contract & Fallback Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.spyOn(CatalogResolver, 'resolveWithGeminiFallback').mockResolvedValue(null);
+    jest.spyOn(CatalogResolver, 'enrichMetadataWithGemini').mockResolvedValue(null);
   });
 
   const mockGoogleBook: NormalizedBookCandidate = {

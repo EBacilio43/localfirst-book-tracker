@@ -2,6 +2,68 @@ import { GoogleBooksService } from './googleBooksService';
 import { OpenLibraryService } from './openLibraryService';
 import { CatalogLookupResult, NormalizedBookCandidate } from '../types';
 import { parseAndValidateIsbn } from '../utils/isbn';
+import { resolveImprintFromIsbn } from '../utils/isbnImprints';
+import { API_KEYS } from '@/core/config/apiKeys';
+
+/**
+ * Comprueba si dos nombres de editorial coinciden de forma estricta o pertenecen al mismo grupo editorial.
+ */
+export function isPublisherMatch(candidatePub?: string, targetPub?: string): boolean {
+  if (!candidatePub || !targetPub) return false;
+
+  const normalize = (s: string) =>
+    s
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const normCandidate = normalize(candidatePub);
+  const normTarget = normalize(targetPub);
+
+  if (!normCandidate || !normTarget) return false;
+
+  // Coincidencia directa o inclusión de sub-cadenas (ej. "debolsillo" en "de bolsillo contemporanea")
+  if (normCandidate.includes(normTarget) || normTarget.includes(normCandidate)) {
+    return true;
+  }
+
+  // Grupos editoriales conocidos y sus sellos filiales
+  const penguinGroup = ['debolsillo', 'penguin', 'penguinrandomhouse', 'randomhouse'];
+  const isCandidatePenguin = penguinGroup.some((p) => normCandidate.includes(p));
+  const isTargetPenguin = penguinGroup.some((p) => normTarget.includes(p));
+  if (isCandidatePenguin && isTargetPenguin) {
+    return true;
+  }
+
+  const planetaGroup = ['planeta', 'editorialplaneta', 'planetadelibros', 'seixbarral', 'destino', 'espasa'];
+  const isCandidatePlaneta = planetaGroup.some((p) => normCandidate.includes(p));
+  const isTargetPlaneta = planetaGroup.some((p) => normTarget.includes(p));
+  if (isCandidatePlaneta && isTargetPlaneta) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Detecta artefactos erróneos de distribuidores, exportadores o mayoristas que Google Books
+ * asocia por error a libros en español (ej. "National Geographic Books" en libros de Penguin / Debolsillo).
+ */
+export function isDistributorArtifact(pub?: string): boolean {
+  if (!pub) return false;
+  const lower = pub.toLowerCase().trim();
+  return (
+    lower.includes('national geographic') ||
+    lower.includes('distributor') ||
+    lower.includes('distribuidora') ||
+    lower.includes('baker & taylor') ||
+    lower.includes('ingram') ||
+    lower.includes('bookwire') ||
+    lower.includes('unknown') ||
+    lower.includes('editorial no especificada')
+  );
+}
 
 export class CatalogResolver {
   /**
@@ -59,11 +121,21 @@ export class CatalogResolver {
       finalBook = googleBook || openLibBook!;
     }
 
-    // 1. Enriquecer editorial y sinopsis con Gemini si alguno de estos campos falta
+    // 1. Resolver sello exacto a partir del prefijo de registro ISBN o corregir distribuidores (instantáneo y offline)
+    const exactImprint = resolveImprintFromIsbn(isbn13, finalBook.title, finalBook.publisher);
+    if (exactImprint) {
+      finalBook = {
+        ...finalBook,
+        publisher: exactImprint,
+      };
+    }
+
+    // 2. Enriquecer editorial y sinopsis con Gemini si aún falta alguno de estos campos
     const isPublisherMissing =
       !finalBook.publisher ||
       finalBook.publisher.trim() === '' ||
-      finalBook.publisher === 'Editorial no especificada';
+      finalBook.publisher === 'Editorial no especificada' ||
+      isDistributorArtifact(finalBook.publisher);
     const isDescriptionMissing =
       !finalBook.description || finalBook.description.trim() === '';
 
@@ -92,29 +164,36 @@ export class CatalogResolver {
       }
     }
 
-    // 2. Garantizar portada si el catálogo no la proveyó o si es un marcador genérico
-    const isSyntheticCover =
-      finalBook.coverUri &&
-      finalBook.coverUri.includes('books.google.com/books/content');
-
-    if (!finalBook.coverUri || isSyntheticCover) {
-      const fallbackCover = await this.resolveCoverUri(
-        isbn13,
-        finalBook.title,
-        finalBook.authors?.[0]
-      );
-      if (fallbackCover) {
-        finalBook = {
-          ...finalBook,
-          coverUri: fallbackCover,
-        };
-      } else if (isSyntheticCover) {
-        finalBook = {
-          ...finalBook,
-          coverUri: undefined,
-        };
-      }
+    // 2. Garantizar portadas alternativas y portada principal
+    const initialCovers: string[] = [];
+    // Prioridad #1: Portada directa de Google Books para este ISBN específico (modelo Bookmory)
+    if (googleBook?.coverUri) initialCovers.push(googleBook.coverUri);
+    // Prioridad #2: Portada de Open Library para este ISBN si existe y es diferente
+    if (openLibBook?.coverUri && !initialCovers.includes(openLibBook.coverUri)) {
+      initialCovers.push(openLibBook.coverUri);
     }
+    if (finalBook.coverUri && !initialCovers.includes(finalBook.coverUri)) {
+      initialCovers.push(finalBook.coverUri);
+    }
+
+    const alternativeCovers = await this.fetchAlternativeCovers(
+      isbn13,
+      finalBook.title,
+      finalBook.authors?.[0],
+      finalBook.publisher,
+      initialCovers
+    );
+
+    const primaryCover =
+      alternativeCovers.length > 0
+        ? alternativeCovers[0]
+        : finalBook.coverUri;
+
+    finalBook = {
+      ...finalBook,
+      coverUri: primaryCover,
+      alternativeCovers,
+    };
 
     return {
       success: true,
@@ -140,14 +219,24 @@ export class CatalogResolver {
         ? google.authors
         : openLib.authors;
 
-    // 3. Editorial exacta
-    const publisher = google.publisher || openLib.publisher;
+    // 3. Editorial exacta (descarta artefactos de distribuidores como National Geographic Books y prioriza sellos editoriales reales)
+    const validOpenLibPub =
+      openLib.publisher && !isDistributorArtifact(openLib.publisher)
+        ? openLib.publisher
+        : undefined;
+
+    const validGooglePub =
+      google.publisher && !isDistributorArtifact(google.publisher)
+        ? google.publisher
+        : undefined;
+
+    const publisher = validOpenLibPub || validGooglePub;
 
     // 4. Sinopsis (Google Books suele ser mucho más completo)
     const description = google.description || openLib.description;
 
-    // 5. Portada (Prioriza Open Library si tiene cover L/M de mayor nitidez editorial, o Google Books)
-    const coverUri = openLib.coverUri || google.coverUri;
+    // 5. Portada (Prioriza Google Books porque su consulta es por el ISBN exacto del ejemplar, o Open Library si Google Books no tuviera imagen)
+    const coverUri = google.coverUri || openLib.coverUri;
 
     // 6. Páginas (evita 0 o valores negativos)
     const pageCount = google.pageCount > 0 ? google.pageCount : openLib.pageCount;
@@ -175,8 +264,7 @@ export class CatalogResolver {
   static async resolveWithGeminiFallback(
     isbn13: string
   ): Promise<NormalizedBookCandidate | null> {
-    const apiKey =
-      typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_GEMINI_API_KEY;
+    const apiKey = API_KEYS.gemini;
     if (!apiKey) return null;
 
     try {
@@ -245,17 +333,16 @@ export class CatalogResolver {
     title?: string,
     author?: string
   ): Promise<{ publisher?: string; description?: string } | null> {
-    const apiKey =
-      typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_GEMINI_API_KEY;
+    const apiKey = API_KEYS.gemini;
     if (!apiKey) return null;
 
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(
         apiKey
       )}`;
-      const prompt = `Identifica la editorial exacta y sinopsis corta en espanol del libro con ISBN ${isbn13}${
+      const prompt = `Identifica el sello editorial exacto en español y sinopsis corta del libro con ISBN ${isbn13}${
         title ? ` ("${title}"${author ? ` de ${author}` : ''})` : ''
-      }. Responde UNICAMENTE un JSON valido con los campos: "publisher" (nombre exacto del sello editorial, string o null), "description" (sinopsis breve de 2 a 4 oraciones, string o null).`;
+      }. Responde UNICAMENTE un JSON valido con los campos: "publisher" (nombre exacto del sello editorial, ej. Debolsillo, Penguin Clásicos, Alfaguara, Planeta, Alianza, etc. No respondas nombres de distribuidores o mayoristas como National Geographic Books), "description" (sinopsis breve de 2 a 4 oraciones, string o null).`;
 
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), 6000);
@@ -298,56 +385,151 @@ export class CatalogResolver {
   }
 
   /**
-   * Resuelve la portada en alta resolución consultando endpoints de Open Library.
-   * Evita URLs sintéticas o plantillas genéricas.
+   * Obtiene un conjunto enriquecido de portadas alternativas para el libro.
+   * Si se conoce la editorial, filtra EXCLUSIVAMENTE portadas de esa editorial,
+   * manteniendo la lista concisa (máximo 4 a 5 opciones) con la portada del ISBN exacto en primer lugar.
+   */
+  static async fetchAlternativeCovers(
+    isbn13: string,
+    title?: string,
+    author?: string,
+    publisherOrInitialCovers?: string | Array<string | undefined | null>,
+    maybeInitialCovers?: Array<string | undefined | null>
+  ): Promise<string[]> {
+    let publisher: string | undefined;
+    let initialCovers: Array<string | undefined | null> = [];
+
+    if (Array.isArray(publisherOrInitialCovers)) {
+      initialCovers = publisherOrInitialCovers;
+    } else if (typeof publisherOrInitialCovers === 'string') {
+      publisher =
+        publisherOrInitialCovers !== 'Editorial no especificada'
+          ? publisherOrInitialCovers.trim()
+          : undefined;
+      initialCovers = maybeInitialCovers || [];
+    } else {
+      initialCovers = maybeInitialCovers || [];
+    }
+
+    const cleanIsbn = isbn13.replace(/[-\s]/g, '');
+    const publisherCovers = new Set<string>();
+    const generalCovers = new Set<string>();
+
+    // 1. Agregar portadas directas del ISBN exacto (Google Books y Open Library para este ISBN)
+    // El ISBN escaneado corresponde exactamente al libro en mano: su portada va en primer lugar (#1)
+    for (const c of initialCovers) {
+      if (c && typeof c === 'string' && c.trim() !== '') {
+        const secureUrl = c.trim().replace(/^http:\/\//i, 'https://').replace('&edge=curl', '');
+        publisherCovers.add(secureUrl);
+      }
+    }
+
+    // 2. Verificar portada directa por ISBN en Open Library si aun no esta
+    const directIsbnCover = `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
+    if (!publisherCovers.has(directIsbnCover) && typeof fetch !== 'undefined') {
+      try {
+        const olRes = await fetch(`${directIsbnCover}?default=false`, {
+          method: 'HEAD',
+        });
+        if (olRes.ok) {
+          publisherCovers.add(directIsbnCover);
+        }
+      } catch {
+        // Silencioso ante fallas de red
+      }
+    }
+
+    const cleanTitle =
+      title && title !== 'Sin título' && title !== 'Libro sin conexión'
+        ? title.trim()
+        : '';
+
+    if (cleanTitle && typeof fetch !== 'undefined') {
+      const apiKey = API_KEYS.googleBooks;
+
+      // 3. Consultar Google Books filtrando por editorial
+      try {
+        const query = publisher
+          ? `intitle:"${cleanTitle}" inpublisher:"${publisher}"`
+          : `intitle:"${cleanTitle}"`;
+
+        const gbUrl = apiKey
+          ? `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&printType=books&key=${encodeURIComponent(apiKey)}`
+          : `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=8&printType=books`;
+
+        const gbRes = await fetch(gbUrl);
+        if (gbRes.ok) {
+          const gbData = await gbRes.json();
+          if (gbData.items && Array.isArray(gbData.items)) {
+            for (const item of gbData.items) {
+              const info = item.volumeInfo;
+              const thumb =
+                info?.imageLinks?.thumbnail ||
+                info?.imageLinks?.smallThumbnail ||
+                info?.imageLinks?.medium ||
+                info?.imageLinks?.large;
+
+              if (thumb && typeof thumb === 'string') {
+                const secureThumb = thumb.replace(/^http:\/\//i, 'https://').replace('&edge=curl', '');
+                const itemPub = info?.publisher || '';
+
+                if (publisher && isPublisherMatch(itemPub, publisher)) {
+                  publisherCovers.add(secureThumb);
+                } else if (!publisher) {
+                  generalCovers.add(secureThumb);
+                }
+              }
+              if (publisherCovers.size >= 5) break;
+            }
+          }
+        }
+      } catch {
+        // Silencioso ante fallas de red
+      }
+
+      // 4. Si aún tenemos menos de 4 portadas y hay editorial, consultar Open Library por esa editorial
+      if (publisher && publisherCovers.size < 4) {
+        try {
+          const olUrl = `https://openlibrary.org/search.json?title=${encodeURIComponent(cleanTitle)}&publisher=${encodeURIComponent(publisher)}&limit=5`;
+          const olRes = await fetch(olUrl);
+          if (olRes.ok) {
+            const olData = await olRes.json();
+            if (olData.docs && Array.isArray(olData.docs)) {
+              for (const doc of olData.docs) {
+                const docPub = doc.publisher?.[0] || '';
+                if (!docPub || isPublisherMatch(docPub, publisher)) {
+                  if (doc.cover_i && typeof doc.cover_i === 'number' && doc.cover_i > 0) {
+                    publisherCovers.add(`https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg`);
+                  }
+                }
+                if (publisherCovers.size >= 5) break;
+              }
+            }
+          }
+        } catch {
+          // Silencioso ante fallas de red
+        }
+      }
+    }
+
+    // Si identificamos la editorial, devolvemos EXCLUSIVAMENTE portadas de esa editorial (máx 5)
+    if (publisher && publisherCovers.size > 0) {
+      return Array.from(publisherCovers).slice(0, 5);
+    }
+
+    // Si no se identificó editorial, devolver las opciones generales (máx 5)
+    return [...Array.from(publisherCovers), ...Array.from(generalCovers)].slice(0, 5);
+  }
+
+  /**
+   * Resuelve la mejor portada individual en alta resolución.
    */
   static async resolveCoverUri(
     isbn13: string,
     title?: string,
     author?: string
   ): Promise<string | undefined> {
-    const cleanIsbn = isbn13.replace(/[-\s]/g, '');
-
-    // 1. Endpoint directo de Open Library por ISBN
-    try {
-      const olRes = await fetch(
-        `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg?default=false`,
-        { method: 'HEAD' }
-      );
-      if (olRes.ok) {
-        return `https://covers.openlibrary.org/b/isbn/${cleanIsbn}-L.jpg`;
-      }
-    } catch {
-      // fallback silencioso
-    }
-
-    // 2. Búsqueda por título y autor en Open Library Search API
-    if (title && title !== 'Sin título') {
-      try {
-        const queryParams = new URLSearchParams({ title });
-        if (author && author !== 'Autor desconocido') {
-          queryParams.append('author', author);
-        }
-        const sRes = await fetch(
-          `https://openlibrary.org/search.json?${queryParams.toString()}`
-        );
-        if (sRes.ok) {
-          const sData = await sRes.json();
-          if (sData.docs && Array.isArray(sData.docs) && sData.docs.length > 0) {
-            const docWithCover = sData.docs.find(
-              (d: { cover_i?: number }) =>
-                typeof d.cover_i === 'number' && d.cover_i > 0
-            );
-            if (docWithCover && docWithCover.cover_i) {
-              return `https://covers.openlibrary.org/b/id/${docWithCover.cover_i}-L.jpg`;
-            }
-          }
-        }
-      } catch {
-        // fallback silencioso
-      }
-    }
-
-    return undefined;
+    const covers = await this.fetchAlternativeCovers(isbn13, title, author);
+    return covers.length > 0 ? covers[0] : undefined;
   }
 }
