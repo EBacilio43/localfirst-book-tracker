@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>BaciBooks — Dossier Integral de Funcionalidades Implementadas (v1.0.0)</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 12mm 14mm 12mm 14mm;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      background-color: #FFFFFF;
+      color: #1C1917;
+      font-size: 9pt;
+      line-height: 1.4;
+    }
+    .header {
+      border-bottom: 2.5px solid #1E4635;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .brand-title {
+      font-size: 20pt;
+      font-weight: 800;
+      color: #1E4635;
+      letter-spacing: -0.5px;
+    }
+    .brand-subtitle {
+      font-size: 9.5pt;
+      color: #78716C;
+      font-weight: 500;
+      margin-top: 1px;
+    }
+    .meta-box {
+      text-align: right;
+      font-size: 8pt;
+      color: #78716C;
+    }
+    .meta-box strong {
+      color: #1C1917;
+    }
+    .badge {
+      display: inline-block;
+      background-color: #EFE9DF;
+      color: #1E4635;
+      font-weight: 700;
+      font-size: 7.5pt;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+    .intro-banner {
+      background-color: #FAF7F2;
+      border: 1px solid #EBE5DC;
+      border-left: 3.5px solid #1E4635;
+      padding: 8px 10px;
+      border-radius: 5px;
+      margin-bottom: 12px;
+    }
+    .intro-banner p {
+      font-size: 8.5pt;
+      color: #44403C;
+      line-height: 1.35;
+    }
+    .section-block {
+      margin-bottom: 12px;
+      page-break-inside: avoid;
+    }
+    h2 {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1E4635;
+      border-bottom: 1px solid #EBE5DC;
+      padding-bottom: 3px;
+      margin-bottom: 6px;
+    }
+    .section-desc {
+      font-size: 8.2pt;
+      color: #78716C;
+      margin-bottom: 6px;
+    }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .feature-card {
+      background: #FAFAFA;
+      border: 1px solid #EBE5DC;
+      border-radius: 5px;
+      padding: 7px 9px;
+      page-break-inside: avoid;
+    }
+    .feature-card h3 {
+      font-size: 9pt;
+      font-weight: 700;
+      color: #1C1917;
+      margin-bottom: 2px;
+    }
+    .feature-card p {
+      font-size: 8.2pt;
+      color: #44403C;
+      line-height: 1.3;
+    }
+    .feature-list {
+      list-style-type: none;
+    }
+    .feature-list li {
+      position: relative;
+      padding-left: 12px;
+      margin-bottom: 4px;
+      font-size: 8.3pt;
+      color: #292524;
+      line-height: 1.3;
+    }
+    .feature-list li::before {
+      content: "•";
+      position: absolute;
+      left: 1px;
+      color: #B85F30;
+      font-size: 11pt;
+      line-height: 1;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 8pt;
+      page-break-inside: avoid;
+      margin-top: 4px;
+    }
+    th, td {
+      border: 1px solid #EBE5DC;
+      padding: 5px 7px;
+      text-align: left;
+    }
+    th {
+      background-color: #FAF7F2;
+      color: #1E4635;
+      font-weight: 700;
+    }
+    tr:nth-child(even) td {
+      background-color: #FCFBF9;
+    }
+    .tag-pill {
+      display: inline-block;
+      font-size: 7.2pt;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+    .footer {
+      margin-top: 14px;
+      border-top: 1px solid #EBE5DC;
+      padding-top: 6px;
+      font-size: 7.5pt;
+      color: #78716C;
+      display: flex;
+      justify-content: space-between;
+      page-break-inside: avoid;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Encabezado Principal -->
+  <div class="header">
+    <div>
+      <div class="brand-title">BaciBooks</div>
+      <div class="brand-subtitle">Biblioteca Personal Inteligente — Dossier de Funcionalidades Implementadas</div>
+    </div>
+    <div class="meta-box">
+      <div class="badge">Versión 1.0.0 — Fases 1 a 5</div>
+      <div><strong>Fecha:</strong> Noviembre 2026</div>
+      <div><strong>Estado:</strong> Producción / Verificado (247 Pruebas)</div>
+    </div>
+  </div>
+
+  <!-- Banner de Introducción -->
+  <div class="intro-banner">
+    <p>
+      <strong>BaciBooks</strong> es una aplicación móvil multiplataforma (Android / iOS) para la gestión integral de bibliotecas personales (libros físicos y eBooks). Opera bajo arquitectura <strong>Local-First ($0 USD/mes de infraestructura)</strong> con <strong>React Native, Expo SDK 52, TypeScript estricto, Drizzle ORM y SQLite FTS5</strong>. Todas las funcionalidades están diseñadas con estética Cálida Editorial, iconografía vectorial Lucide (cero emojis) y lenguaje humanizado para lectores.
+    </p>
+  </div>
+
+  <!-- 1. Centro de Mando y Ergonomía -->
+  <div class="section-block">
+    <h2>1. Centro de Mando de Lectura (Dashboard) & Ergonomía Móvil</h2>
+    <div class="section-desc">Panel principal diseñado para operar fluidamente con el pulgar a una sola mano.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Tarjeta de Lectura en Curso</h3>
+        <p>Muestra el libro activo con portada real, barra de porcentaje, páginas leídas y acceso inmediato al cronómetro con un solo toque.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Navegación Unificada de 5 Pestañas</h3>
+        <p>Distribución ergonómica: Inicio (Centro de Mando), Mi Librero, Escáner ISBN, Búsqueda Inteligente IA y Metas / Estadísticas.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Acceso Rápido a la Ruleta TBR</h3>
+        <p>Botón directo en la barra superior para activar el selector de lecturas pendientes sin navegar por menús profundos.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Protección Anti-Doble Toque (SafeButton)</h3>
+        <p>Bloqueo síncrono por referencia en memoria desde el milisegundo cero (0 ms) con enfriamiento de 500 ms en todos los botones de acción.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Fase 1: Catálogo y Escáner ISBN -->
+  <div class="section-block">
+    <h2>2. Catálogo, Escáner ISBN y Fusión de Metadatos (Fase 1)</h2>
+    <div class="section-desc">Registro ultrarrápido y clasificación ordenada de ejemplares físicos y digitales.</div>
+    <ul class="feature-list">
+      <li><strong>Cámara a 60 fps con Bookland EAN-13:</strong> Lectura instantánea con linterna integrada y filtro de códigos internos de librería (200/201).</li>
+      <li><strong>Modo Ráfaga (Burst Mode):</strong> Escaneo continuo de múltiples libros sin pausar la cámara, con bandeja de cola y guardado masivo en lote.</li>
+      <li><strong>Enfriamiento Anti-Rebote (3,000 ms) y Duplicados:</strong> Detección automática en SQLite para evitar relecturas accidentales y alertar sobre libros ya registrados.</li>
+      <li><strong>Cascada Concurrente con Validación Zod:</strong> Fusión campo por campo entre Google Books y Open Library (sinopsis completas + portadas HD).</li>
+      <li><strong>Agrupación Automática por Sagas:</strong> Detección de sagas y ordenación numérica estricta (#1, #1.5, #2) con cálculo de tomos disponibles.</li>
+      <li><strong>Soporte Físico y Digital:</strong> Distinción entre ejemplares en papel (tapa dura, rústica, bolsillo) y eBooks (Kindle, Kobo, ePub/PDF, Apple Books).</li>
+    </ul>
+  </div>
+
+  <!-- 3. Fase 2: Estados, Estanterías y Ruleta TBR -->
+  <div class="section-block">
+    <h2>3. Estados de Lectura, Estanterías y Ruleta TBR (Fase 2)</h2>
+    <div class="section-desc">Organización física del hogar y toma de decisiones de lectura libre de bloqueos.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>6 Estados de Lectura</h3>
+        <p>Transición inmediata entre: Por leer, Leyendo, En pausa, Leído, Abandonado y Deseado (Wishlist), con actualización reactiva en pantalla.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Estanterías Físicas y Colecciones</h3>
+        <p>Asignación de ubicación en el hogar (Librero principal, Repisa 2) y etiquetas personalizadas para colecciones digitales.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Lista de Deseos (Wishlist)</h3>
+        <p>Anotación de libros deseados con precio estimado y nombre de la librería donde se vieron, sin mezclarlos con el inventario propio.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Ruleta TBR Inteligente</h3>
+        <p>Selector aleatorio que respeta el orden de las sagas: jamás recomienda un tomo 2 si el lector aún no ha terminado el tomo 1.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Salto de página para presentación ejecutiva -->
+  <div class="page-break"></div>
+
+  <!-- Encabezado Página 2 -->
+  <div class="header">
+    <div>
+      <div class="brand-title" style="font-size: 16pt;">BaciBooks</div>
+      <div class="brand-subtitle">Dossier Integral de Funcionalidades — Continuación</div>
+    </div>
+    <div class="meta-box">
+      <div>Página 2 de 3</div>
+    </div>
+  </div>
+
+  <!-- 4. Fase 3: Cronómetro, Metas y Predicciones -->
+  <div class="section-block">
+    <h2>4. Sesiones de Lectura, Cronómetro y Motor de Predicciones (Fase 3)</h2>
+    <div class="section-desc">Monitoreo de hábitos, rachas diarias y estimaciones matemáticas de finalización.</div>
+    <ul class="feature-list">
+      <li><strong>Cronómetro por Timestamps:</strong> Medición exacta basada en época de inicio (`started_at_epoch_ms`), inmune al apagado de pantalla o suspensión de la app.</li>
+      <li><strong>Registro Retroactivo ("Leí ayer"):</strong> Selector de fecha local para registrar lecturas nocturnas sin perder la racha diaria injustamente.</li>
+      <li><strong>Rachas en Huso Horario Local:</strong> Cálculo determinista de días consecutivos leídos respetando la zona horaria del dispositivo.</li>
+      <li><strong>Metas Mensuales y Anuales con Indicador de Ritmo:</strong> Seguimiento visual del progreso con estados en tiempo real (Adelantado, En ritmo, Atrasado).</li>
+      <li><strong>Motor de Predicciones (Forecasting):</strong> Cálculo de velocidad promedio (páginas/hora, páginas/día) y fecha estimada de finalización (ETA) por libro.</li>
+      <li><strong>Filtro de Anomalías (Outlier Guard):</strong> Detección preventiva ante sesiones atípicas (menores a 3 págs/h o mayores a 180 págs/h) por olvido del cronómetro.</li>
+    </ul>
+  </div>
+
+  <!-- 5. Fase 4: IA, OCR de Citas y Préstamos -->
+  <div class="section-block">
+    <h2>5. Búsqueda Inteligente IA, OCR de Citas y Préstamos (Fase 4)</h2>
+    <div class="section-desc">Herramientas avanzadas de memoria literaria y control de biblioteca física.</div>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 25%;">Funcionalidad</th>
+          <th style="width: 45%;">Detalle Técnico y Operativo</th>
+          <th style="width: 30%;">Valor para el Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Detective Literario IA</strong></td>
+          <td>Integración con Gemini Flash (`gemini-3.8-flash`) para identificar libros por recuerdos vagos de trama o personajes.</td>
+          <td>Encuentra libros olvidados sin recordar el título exacto.</td>
+        </tr>
+        <tr>
+          <td><strong>Búsqueda Profunda FTS5</strong></td>
+          <td>Indexación de texto completo sin acentos (`unicode61 remove_diacritics 2`) sobre sinopsis, notas y citas.</td>
+          <td>Búsqueda instantánea y 100% offline en milisegundos.</td>
+        </tr>
+        <tr>
+          <td><strong>OCR On-Device (Google ML Kit)</strong></td>
+          <td>Reconocimiento óptico de caracteres procesado localmente en el móvil a costo $0 USD, sin enviar imágenes a la red.</td>
+          <td>Extracción rápida de citas de páginas físicas con total privacidad.</td>
+        </tr>
+        <tr>
+          <td><strong>Sanitizador Post-OCR</strong></td>
+          <td>Limpieza lingüística que une palabras cortadas por guiones al final de línea (`/\-\s*\r?\n\s*/g`).</td>
+          <td>Citas limpias y listas para guardar o compartir sin edición manual.</td>
+        </tr>
+        <tr>
+          <td><strong>Glosario Anti-Spoilers</strong></td>
+          <td>Ficha de personajes por libro con desenfoque táctil (blur) para proteger revelaciones de trama ante terceros.</td>
+          <td>Consulta de personajes secundarios sin arruinar sorpresas.</td>
+        </tr>
+        <tr>
+          <td><strong>Préstamos Bidireccionales</strong></td>
+          <td>Control de libros prestados a amigos (`LENT_OUT`) y libros prestados al lector (`BORROWED_IN`) con recordatorios.</td>
+          <td>Evita la pérdida de libros físicos propios y ajenos.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 6. Fase 5: Nube Híbrida, Portabilidad y Privacidad -->
+  <div class="section-block">
+    <h2>6. Nube Híbrida, Portabilidad y Privacidad (Fase 5)</h2>
+    <div class="section-desc">Soberanía de datos del usuario, interoperabilidad y conformidad con tiendas.</div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <h3>Bóveda en Google Drive (appDataFolder)</h3>
+        <p>Respaldo en la nube privada del propio usuario mediante instantáneas JSON comprimidas con GZIP, inmunes a corrupción binaria SQLite WAL.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Catálogo Comunitario Supabase</h3>
+        <p>Base global compartida de ISBNs con sistema de consenso anti-vandalismo para resolver libros en 20 ms sin agotar cuotas externas.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Importador CSV de Goodreads</h3>
+        <p>Migración fluida desde Goodreads y StoryGraph con mapeo inteligente de columnas y resolución de portadas en segundo plano.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Limpieza de Portadas y Derecho al Olvido</h3>
+        <p>Recolector de basura que elimina archivos WebP huérfanos y opción de borrado total de datos conforme a políticas de Play Store y App Store.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Salto de página para presentación ejecutiva -->
+  <div class="page-break"></div>
+
+  <!-- Encabezado Página 3 -->
+  <div class="header">
+    <div>
+      <div class="brand-title" style="font-size: 16pt;">BaciBooks</div>
+      <div class="brand-subtitle">Dossier Integral de Funcionalidades — Métricas de Calidad y Stack</div>
+    </div>
+    <div class="meta-box">
+      <div>Página 3 de 3</div>
+    </div>
+  </div>
+
+  <!-- 7. Stack Tecnológico Oficial -->
+  <div class="section-block">
+    <h2>7. Matriz de Arquitectura y Stack Tecnológico</h2>
+    <div class="section-desc">Definición estricta de dependencias oficiales sin librerías redundantes.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Capa</th>
+          <th>Tecnología Oficial</th>
+          <th>Rol en BaciBooks</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Framework & Base</strong></td>
+          <td>React Native + Expo SDK 52 + TypeScript 5.x</td>
+          <td>Núcleo multiplataforma con Nueva Arquitectura y tipado estricto (strict: true).</td>
+        </tr>
+        <tr>
+          <td><strong>Navegación</strong></td>
+          <td>Expo Router v4 (typedRoutes)</td>
+          <td>Enrutamiento basado en archivos con 5 pestañas y navegación tipada.</td>
+        </tr>
+        <tr>
+          <td><strong>Base de Datos Local</strong></td>
+          <td>expo-sqlite + Drizzle ORM + SQLite FTS5</td>
+          <td>Persistencia Local-First con modo WAL, migraciones SQL y búsqueda de texto completo.</td>
+        </tr>
+        <tr>
+          <td><strong>Estilos e Iconos</strong></td>
+          <td>StyleSheet + Lucide Icons (lucide-react-native)</td>
+          <td>Diseño editorial consistente, libre de emojis y optimizado para pantallas táctiles.</td>
+        </tr>
+        <tr>
+          <td><strong>Cámara y Portadas</strong></td>
+          <td>expo-camera + expo-image-manipulator</td>
+          <td>Lectura de código de barras a 60 fps y compresión de portadas en WebP (~60 KB).</td>
+        </tr>
+        <tr>
+          <td><strong>Inteligencia Artificial</strong></td>
+          <td>@google/genai (Gemini 3.8 Flash)</td>
+          <td>Detective literario para resolución de libros por memoria de trama con JSON estructurado.</td>
+        </tr>
+        <tr>
+          <td><strong>OCR On-Device</strong></td>
+          <td>@react-native-ml-kit/text-recognition</td>
+          <td>Extracción de citas literarias 100% en el dispositivo, offline y costo $0 USD.</td>
+        </tr>
+        <tr>
+          <td><strong>Nube Híbrida ($0)</strong></td>
+          <td>Google Drive API v3 + Supabase Free</td>
+          <td>Copia de seguridad en Drive del usuario y catálogo compartido de ISBNs con consenso.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 8. Métricas de Calidad y Suite de Pruebas -->
+  <div class="section-block">
+    <h2>8. Métricas de Calidad, Automatización y Pruebas (QA)</h2>
+    <div class="section-desc">Resultados de la suite automatizada de integración y dominio ejecutada con Jest.</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Módulo Evaluado</th>
+          <th>Pruebas</th>
+          <th>Alcance de Verificación</th>
+          <th>Resultado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Validación ISBN y Códigos de Tienda</strong></td>
+          <td>18 pruebas</td>
+          <td>Algoritmo ISBN-10 a 13, checksum Bookland 978/979 y filtro de códigos 200/201.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cascada de Catálogos y Zod</strong></td>
+          <td>6 pruebas</td>
+          <td>Cruce Google Books / Open Library, contratos HTTP y resiliencia ante cortes.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Repositorios y Persistencia SQLite</strong></td>
+          <td>16 pruebas</td>
+          <td>CRUD de libros, estanterías, citas OCR, préstamos y agrupación de sagas.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cronómetro y Predicciones (Forecasting)</strong></td>
+          <td>10 pruebas</td>
+          <td>Páginas/hora, medias móviles, cálculo de ETA y filtro de anomalías.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>IA, OCR y Sanitizador Lingüístico</strong></td>
+          <td>18 pruebas</td>
+          <td>Esquema Gemini, eliminación de guiones de corte de línea y glosario anti-spoilers.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Nube Híbrida, Snapshot y Portabilidad</strong></td>
+          <td>12 pruebas</td>
+          <td>GZIP determinista, migrador Zod, importación CSV y borrado de huérfanos.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr>
+          <td><strong>Componentes Visuales y Anti-Doble Toque</strong></td>
+          <td>167 pruebas</td>
+          <td>SafeButton, renderizado de pantallas de fases 1 a 5 y centro de mando.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7;">Aprobado (100%)</span></td>
+        </tr>
+        <tr style="font-weight: 700; background-color: #FAF7F2;">
+          <td>Total Suite Automatizada</td>
+          <td>247 pruebas (25 suites)</td>
+          <td>Cobertura integral de lógica de negocio, UX y contratos externos.</td>
+          <td><span class="tag-pill" style="color: #16A34A; background: #DCFCE7; font-size: 8pt;">247 / 247 Pasadas (100%)</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pie de Página Final -->
+  <div class="footer">
+    <div>BaciBooks Mobile App — Proyecto Open Source / Portafolio Senior</div>
+    <div>Rama git: <code>develop</code> | Versión: <code>v1.0.0</code> | Licencia Privada / Confidencial</div>
+  </div>
+
+</body>
+</html>

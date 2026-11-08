@@ -12,68 +12,50 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isNotNull } from 'drizzle-orm';
 import {
-  BookOpen,
-  Layers,
+  Play,
+  CheckCircle,
   Sparkles,
-  Smartphone,
-  Plus,
   Bookmark,
-  Library,
   Compass,
-  MapPin,
-  ShoppingBag,
-  ShieldAlert,
-  Check,
-  Tag,
   Cloud,
+  BookOpen,
+  Smartphone,
+  ChevronRight,
+  Flame,
+  ArrowRight,
+  BookMarked,
+  CheckSquare,
 } from 'lucide-react-native';
-import { db } from '@/db/client';
-import { readingLogs } from '@/db/schema/readingLogs';
-import { BooksRepository, SeriesGroup } from '@/db/repositories/booksRepository';
-import {
-  ShelvesRepository,
-  FurnitureShelvesGroup,
-} from '@/db/repositories/shelvesRepository';
+import { BooksRepository } from '@/db/repositories/booksRepository';
+import { ReadingSessionsRepository } from '@/db/repositories/readingSessionsRepository';
 import { ReadingLogsRepository } from '@/db/repositories/readingLogsRepository';
-import {
-  BookLoansRepository,
-  shouldCountInOwnedPhysicalInventory,
-} from '@/db/repositories/bookLoansRepository';
+import { BookLoansRepository } from '@/db/repositories/bookLoansRepository';
+import { ShelvesRepository } from '@/db/repositories/shelvesRepository';
 import { Book } from '@/db/schema/books';
-import { Shelf } from '@/db/schema/shelves';
-import { ReadingLog } from '@/db/schema/readingLogs';
+import { ReadingSession } from '@/db/schema/readingSessions';
 import { BookLoan } from '@/db/schema/bookLoans';
-import { LoanCoverRibbon } from '@/features/loans/components/LoanCoverRibbon';
+import { ReadingLog } from '@/db/schema/readingLogs';
+import { Shelf } from '@/db/schema/shelves';
 import {
-  evaluateTbrCandidates,
-  detectSagaGaps,
-  SagaGapReport,
-} from '@/features/shelves/services/tbrRouletteService';
+  calculateStreakAndHeatmap,
+  calculateReaderVelocity,
+} from '@/features/goals-analytics/services/forecastingService';
+import { evaluateTbrCandidates } from '@/features/shelves/services/tbrRouletteService';
+import {
+  ReadingTimerModal,
+  SavedSessionData,
+} from '@/features/reading-tracker/components/ReadingTimerModal';
+import { ManualReadingLogModal } from '@/features/reading-tracker/components/ManualReadingLogModal';
 import { TbrRouletteModal } from '@/features/shelves/components/TbrRouletteModal';
-import {
-  ShelvesManagerModal,
-  DigitalCollectionKey,
-} from '@/features/shelves/components/ShelvesManagerModal';
 import { CloudSyncAndSettingsModal } from '@/features/cloud-sync/components/CloudSyncAndSettingsModal';
 import { wipeAllUserDataPermanently } from '@/features/cloud-sync/services/privacyDataWipeService';
 import { colors } from '@/core/theme/colors';
 import { SafeButton } from '@/shared/components/SafeButton';
-import { LibraryGridSkeleton } from '@/shared/components/Skeleton';
-
-type FilterType =
-  | 'TODOS'
-  | 'FISICOS'
-  | 'DIGITALES'
-  | 'SAGAS'
-  | 'ESTANTERIAS'
-  | 'WISHLIST';
 
 const { width } = Dimensions.get('window');
-const COLUMN_WIDTH = (width - 48) / 2;
 
-function parseAuthors(authorsJson?: string | null): string {
+function parseFirstAuthor(authorsJson?: string | null): string {
   if (!authorsJson) return 'Autor desconocido';
   try {
     const list = JSON.parse(authorsJson);
@@ -81,70 +63,65 @@ function parseAuthors(authorsJson?: string | null): string {
       return list[0];
     }
   } catch {
-    // Retornar fallback seguro
+    // fallback seguro
   }
   return 'Autor desconocido';
 }
 
-export default function LibraryScreen() {
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Buenos días';
+  if (hour < 19) return 'Buenas tardes';
+  return 'Buenas noches';
+}
+
+function getTodayLocalDate(): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+export default function DashboardScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const [activeFilter, setActiveFilter] = useState<FilterType>('TODOS');
-  const [allBooksList, setAllBooksList] = useState<Book[]>([]);
-  const [seriesList, setSeriesList] = useState<SeriesGroup[]>([]);
-  const [furnitureGroups, setFurnitureGroups] = useState<FurnitureShelvesGroup[]>([]);
-  const [shelvesList, setShelvesList] = useState<Shelf[]>([]);
-  const [completedLogs, setCompletedLogs] = useState<ReadingLog[]>([]);
-  const [totalCompletedCount, setTotalCompletedCount] = useState<number>(0);
-  const [activeLoansMap, setActiveLoansMap] = useState<Record<string, BookLoan>>({});
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Estados de Modales
-  const [isTbrModalVisible, setIsTbrModalVisible] = useState(false);
-  const [rouletteModality, setRouletteModality] = useState<
-    'ALL' | 'PHYSICAL' | 'DIGITAL'
-  >('ALL');
-  const [rouletteLength, setRouletteLength] = useState<
-    'ANY' | 'SHORT' | 'LONG'
-  >('ANY');
+  const [booksList, setBooksList] = useState<Book[]>([]);
+  const [sessionsList, setSessionsList] = useState<ReadingSession[]>([]);
+  const [logsList, setLogsList] = useState<ReadingLog[]>([]);
+  const [shelvesList, setShelvesList] = useState<Shelf[]>([]);
+  const [activeLoansList, setActiveLoansList] = useState<BookLoan[]>([]);
 
-  const [isShelvesModalVisible, setIsShelvesModalVisible] = useState(false);
-  const [selectedBookForShelves, setSelectedBookForShelves] =
-    useState<Book | null>(null);
+  // Modales
+  const [isTimerModalVisible, setIsTimerModalVisible] = useState(false);
+  const [isManualModalVisible, setIsManualModalVisible] = useState(false);
+  const [isRouletteModalVisible, setIsRouletteModalVisible] = useState(false);
   const [isCloudModalVisible, setIsCloudModalVisible] = useState(false);
 
-  const loadData = useCallback(async () => {
+  // Filtros de la Ruleta TBR
+  const [rouletteModality, setRouletteModality] = useState<'ALL' | 'PHYSICAL' | 'DIGITAL'>('ALL');
+  const [rouletteLength, setRouletteLength] = useState<'ANY' | 'SHORT' | 'LONG'>('ANY');
+
+  // Carga reactiva de datos del dashboard
+  const loadDashboardData = useCallback(async () => {
     try {
-      const [
-        all,
-        series,
-        groupedShelves,
-        allShelves,
-        completedCount,
-        finishedLogs,
-        loansMap,
-      ] = await Promise.all([
+      const [allBooks, allSessions, allLogs, allLoans, allShelves] = await Promise.all([
         BooksRepository.getAll(),
-        BooksRepository.getSeriesGrouped(),
-        ShelvesRepository.getGroupedWithBookCounts(),
+        ReadingSessionsRepository.getAll(),
+        ReadingLogsRepository.getAll(),
+        BookLoansRepository.getAll(),
         ShelvesRepository.getAll(),
-        ReadingLogsRepository.getTotalCompletedBooksCount(),
-        db.select().from(readingLogs).where(isNotNull(readingLogs.finishedAt)),
-        BookLoansRepository.getActiveLoansByBookMap(),
       ]);
 
-      setAllBooksList(all);
-      setSeriesList(series);
-      setFurnitureGroups(groupedShelves);
+      setBooksList(allBooks);
+      setSessionsList(allSessions);
+      setLogsList(allLogs);
+      setActiveLoansList(allLoans.filter((loan) => loan.returnedAt === null));
       setShelvesList(allShelves);
-      setTotalCompletedCount(completedCount);
-      setCompletedLogs(finishedLogs);
-      setActiveLoansMap(loansMap);
-    } catch (err) {
-      console.error('Error cargando biblioteca:', err);
+    } catch {
+      // Manejo silencioso y seguro
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -152,764 +129,505 @@ export default function LibraryScreen() {
   }, []);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-  const onRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setIsRefreshing(true);
-    loadData();
-  };
+    loadDashboardData();
+  }, [loadDashboardData]);
 
-  // Separación estricta de libros propios vs lista de deseos
-  const ownedBooks = useMemo(() => {
-    return allBooksList.filter(
-      (b) => b.ownership !== 'WISHLIST' && b.currentStatus !== 'WISHLIST'
+  // Libro activo principal (el que se está leyendo con actualización más reciente)
+  const currentlyReadingBooks = useMemo(() => {
+    return booksList
+      .filter((b) => b.currentStatus === 'LEYENDO')
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }, [booksList]);
+
+  const activeBook = currentlyReadingBooks[0] || null;
+
+  // Calculo de velocidad del lector
+  const readerVelocity = useMemo(() => {
+    return calculateReaderVelocity(sessionsList);
+  }, [sessionsList]);
+
+  // Calculo de racha actual
+  const streakInfo = useMemo(() => {
+    return calculateStreakAndHeatmap(sessionsList);
+  }, [sessionsList]);
+
+  // Estadísticas del día de hoy
+  const todayStats = useMemo(() => {
+    const todayIso = getTodayLocalDate();
+    const todaySessions = sessionsList.filter((s) => s.localDate === todayIso);
+    const totalMinutes = Math.round(
+      todaySessions.reduce((acc, s) => acc + s.durationSeconds, 0) / 60
     );
-  }, [allBooksList]);
+    const totalPages = todaySessions.reduce((acc, s) => acc + s.pagesRead, 0);
+    return {
+      minutes: totalMinutes,
+      pages: totalPages,
+    };
+  }, [sessionsList]);
 
-  const wishlistBooks = useMemo(() => {
-    return allBooksList.filter(
-      (b) => b.ownership === 'WISHLIST' || b.currentStatus === 'WISHLIST'
-    );
-  }, [allBooksList]);
-
-  // Detector de huecos de saga
-  const sagaGaps: SagaGapReport[] = useMemo(() => {
-    return detectSagaGaps(allBooksList);
-  }, [allBooksList]);
-
-  // Candidatos para la Ruleta TBR
+  // Libros para la ruleta TBR
   const tbrCandidates = useMemo(() => {
     const minPages = rouletteLength === 'LONG' ? 300 : undefined;
     const maxPages = rouletteLength === 'SHORT' ? 299 : undefined;
-    return evaluateTbrCandidates(ownedBooks, completedLogs, {
+    return evaluateTbrCandidates(booksList, logsList, {
       modality: rouletteModality,
       minPages,
       maxPages,
     });
-  }, [ownedBooks, completedLogs, rouletteModality, rouletteLength]);
+  }, [booksList, logsList, rouletteModality, rouletteLength]);
 
-  // Manejo de ganador de Ruleta TBR
+  // Libros pendientes o en mesita de noche
+  const bedsideBooks = useMemo(() => {
+    if (currentlyReadingBooks.length > 1) {
+      return currentlyReadingBooks.slice(1);
+    }
+    return booksList.filter((b) => b.currentStatus === 'POR_LEER').slice(0, 3);
+  }, [currentlyReadingBooks, booksList]);
+
+  // Guardar sesión con cronómetro
+  const handleSaveTimedSession = async (data: SavedSessionData) => {
+    if (!activeBook) return;
+    try {
+      await ReadingSessionsRepository.createTimedSession({
+        bookId: activeBook.id,
+        startPage: data.startPage,
+        endPage: data.endPage,
+        durationSeconds: data.durationSeconds,
+        startedAtEpochMs: data.startedAtEpochMs,
+        localDateOverride: data.localDate,
+        outlierResolution:
+          data.outlierResolution === 'NORMAL' ? 'NONE' : data.outlierResolution,
+        averageSpeedPagesPerHour: data.speedPagesPerHour,
+      });
+      setIsTimerModalVisible(false);
+      await loadDashboardData();
+    } catch {
+      Alert.alert('Error', 'No se pudo guardar la sesión de lectura');
+    }
+  };
+
+  // Guardar avance de lectura manual
+  const handleSaveManualProgress = async (params: {
+    newPage: number;
+    when: 'TODAY' | 'YESTERDAY';
+    isFinished: boolean;
+  }) => {
+    if (!activeBook) return;
+    try {
+      await BooksRepository.updateReadingProgress({
+        bookId: activeBook.id,
+        currentUnit: params.newPage,
+        when: params.when,
+      });
+      setIsManualModalVisible(false);
+      await loadDashboardData();
+    } catch {
+      Alert.alert('Error', 'No se pudo registrar el avance de lectura');
+    }
+  };
+
+  // Manejo de seleccion de ganador en ruleta TBR
   const handleStartReadingWinner = async (winner: Book) => {
     try {
       await ReadingLogsRepository.startReading(winner.id);
-      setIsTbrModalVisible(false);
+      setIsRouletteModalVisible(false);
       router.push(`/book/${winner.id}`);
     } catch {
       Alert.alert('Error', 'No se pudo iniciar la lectura del libro seleccionado');
     }
   };
 
-  // Convertir libro de Wishlist a Propio
-  const handleQuickBuyWishlistBook = async (wishlistBook: Book) => {
+  // Borrado permanente de datos
+  const handleWipeAllData = async () => {
     try {
-      await BooksRepository.convertWishlistToOwned({
-        bookId: wishlistBook.id,
-        modality: wishlistBook.modality,
-        shelfId: wishlistBook.shelfId,
-        format: wishlistBook.format,
-      });
-      await loadData();
+      await wipeAllUserDataPermanently();
+      setIsCloudModalVisible(false);
+      await loadDashboardData();
       Alert.alert(
-        'Movido a Mi Librero',
-        `"${wishlistBook.title}" se ha trasladado a tu biblioteca en estado Por leer.`
+        'Datos eliminados',
+        'Se han restablecido todos los registros locales de tu biblioteca.'
       );
     } catch {
-      Alert.alert('Error', 'No se pudo mover el libro a la biblioteca');
+      Alert.alert('Error', 'No se pudieron eliminar los datos');
     }
   };
 
-  // Filtro de libros propios
-  const filteredOwnedBooks = useMemo(() => {
-    if (activeFilter === 'FISICOS') {
-      return ownedBooks.filter((b) => b.modality === 'PHYSICAL');
-    }
-    if (activeFilter === 'DIGITALES') {
-      return ownedBooks.filter((b) => b.modality === 'DIGITAL');
-    }
-    return ownedBooks;
-  }, [ownedBooks, activeFilter]);
-
-  // Libros físicos propios sin estantería asignada (excluye libros prestados por terceros)
-  const unassignedPhysicalBooks = useMemo(() => {
-    return ownedBooks.filter(
-      (b) => shouldCountInOwnedPhysicalInventory(b) && !b.shelfId
-    );
-  }, [ownedBooks]);
-
-  const totalSagasCount = seriesList.length;
-  const pendingOfflineCount = useMemo(
-    () =>
-      allBooksList.filter((b) => b.metadataStatus === 'PENDING_OFFLINE_SYNC')
-        .length,
-    [allBooksList]
-  );
-
-  // Libro de referencia para abrir ShelvesManagerModal
-  const shelfModalReferenceBook = selectedBookForShelves || ownedBooks[0] || null;
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Encabezado Principal */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleCol}>
-          <Text style={styles.headerTitle}>Mi Librero</Text>
-          <Text style={styles.headerSubtitle}>
-            {ownedBooks.length}{' '}
-            {ownedBooks.length === 1 ? 'ejemplar' : 'ejemplares'}
-            {totalSagasCount > 0
-              ? ` · ${totalSagasCount} ${
-                  totalSagasCount === 1 ? 'saga' : 'sagas'
-                }`
-              : ''}{' '}
-            · {totalCompletedCount}{' '}
-            {totalCompletedCount === 1 ? 'leído' : 'leídos'}
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Cabecera del Dashboard */}
+      <View style={styles.headerContainer}>
+        <View style={styles.greetingCol}>
+          <Text style={styles.greetingTitle} numberOfLines={1}>
+            {getGreeting()}
+          </Text>
+          <Text style={styles.greetingSubtitle} numberOfLines={1}>
+            ¿Listo para continuar tu lectura?
           </Text>
         </View>
 
-        <View style={styles.headerActions}>
-          <SafeButton
-            size="sm"
-            variant="outline"
-            onPress={() => setIsCloudModalVisible(true)}
-            leftIcon={<Cloud size={15} color={colors.light.primary} />}
-            title="Respaldo"
-          />
-
-          <SafeButton
-            size="sm"
-            variant="outline"
-            onPress={() => setIsTbrModalVisible(true)}
-            leftIcon={<Compass size={16} color={colors.light.primary} />}
-            title="¿Qué leo hoy?"
-          />
-
-          <SafeButton
-            size="sm"
-            variant="primary"
-            onPress={() => router.push('/scan')}
-            leftIcon={<Plus size={16} color="#FFFFFF" />}
-            title="Agregar"
-          />
-        </View>
-      </View>
-
-      {/* Píldoras de Filtros */}
-      <View style={styles.filtersWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterPills}
+        <Pressable
+          onPress={() => setIsCloudModalVisible(true)}
+          style={styles.headerIconButton}
+          accessibilityRole="button"
+          accessibilityLabel="Abrir opciones de respaldo y cuenta"
         >
-          <Pressable
-            onPress={() => setActiveFilter('TODOS')}
-            style={[styles.pill, activeFilter === 'TODOS' && styles.pillActive]}
-          >
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'TODOS' && styles.pillTextActive,
-              ]}
-            >
-              Todos
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveFilter('FISICOS')}
-            style={[
-              styles.pill,
-              activeFilter === 'FISICOS' && styles.pillActive,
-            ]}
-          >
-            <BookOpen
-              size={14}
-              color={
-                activeFilter === 'FISICOS' ? '#FFFFFF' : colors.light.textMuted
-              }
-            />
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'FISICOS' && styles.pillTextActive,
-              ]}
-            >
-              Físicos
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveFilter('DIGITALES')}
-            style={[
-              styles.pill,
-              activeFilter === 'DIGITALES' && styles.pillActive,
-            ]}
-          >
-            <Smartphone
-              size={14}
-              color={
-                activeFilter === 'DIGITALES'
-                  ? '#FFFFFF'
-                  : colors.light.textMuted
-              }
-            />
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'DIGITALES' && styles.pillTextActive,
-              ]}
-            >
-              eBooks
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveFilter('SAGAS')}
-            style={[styles.pill, activeFilter === 'SAGAS' && styles.pillActive]}
-          >
-            <Sparkles
-              size={14}
-              color={
-                activeFilter === 'SAGAS' ? '#FFFFFF' : colors.light.accent
-              }
-            />
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'SAGAS' && styles.pillTextActive,
-              ]}
-            >
-              Por Sagas
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveFilter('ESTANTERIAS')}
-            style={[
-              styles.pill,
-              activeFilter === 'ESTANTERIAS' && styles.pillActive,
-            ]}
-          >
-            <Library
-              size={14}
-              color={
-                activeFilter === 'ESTANTERIAS'
-                  ? '#FFFFFF'
-                  : colors.light.primary
-              }
-            />
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'ESTANTERIAS' && styles.pillTextActive,
-              ]}
-            >
-              Estanterías
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => setActiveFilter('WISHLIST')}
-            style={[
-              styles.pill,
-              activeFilter === 'WISHLIST' && styles.pillActive,
-            ]}
-          >
-            <Bookmark
-              size={14}
-              color={
-                activeFilter === 'WISHLIST' ? '#FFFFFF' : colors.light.accent
-              }
-            />
-            <Text
-              style={[
-                styles.pillText,
-                activeFilter === 'WISHLIST' && styles.pillTextActive,
-              ]}
-            >
-              Wishlist ({wishlistBooks.length})
-            </Text>
-          </Pressable>
-        </ScrollView>
+          <Cloud size={20} color={colors.light.primary} />
+        </Pressable>
       </View>
 
-      {/* Contenido según filtro activo */}
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 90 },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.light.primary}
+            onRefresh={handleRefresh}
+            colors={[colors.light.primary]}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
-        {/* SKELETON DE CARGA INICIAL */}
-        {isLoading ? (
-          <LibraryGridSkeleton count={6} />
-        ) : ownedBooks.length === 0 &&
-        !isLoading &&
-        activeFilter !== 'WISHLIST' ? (
-          <View style={styles.emptyContainer}>
-            <View style={styles.emptyIconCircle}>
-              <Library
-                size={44}
-                color={colors.light.primary}
-                strokeWidth={1.5}
-              />
-            </View>
-            <Text style={styles.emptyTitle}>
-              Tu librero está esperando sus primeras historias
-            </Text>
-            <Text style={styles.emptySubtitle}>
-              Escanea el código de barras ISBN de tus libros físicos o registra
-              tus eBooks digitales con portada real.
-            </Text>
-            <SafeButton
-              variant="primary"
-              size="lg"
-              onPress={() => router.push('/scan')}
-              leftIcon={<Plus size={20} color="#FFFFFF" />}
-              title="Escanear primer libro"
-              style={styles.emptyButton}
-            />
-          </View>
-        ) : activeFilter === 'SAGAS' ? (
-          /* VISTA POR SAGAS */
-          <View style={styles.sagasContainer}>
-            {seriesList.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Layers size={40} color={colors.light.textMuted} />
-                <Text style={styles.emptyTitle}>No tienes sagas agrupadas aún</Text>
-                <Text style={styles.emptySubtitle}>
-                  Los libros con nombre de saga se agruparán automáticamente aquí
-                  en su orden numérico de lectura.
-                </Text>
+        {/* HERO CARD: Libro Activo o Mesita Despejada */}
+        {activeBook ? (
+          <View style={styles.heroCard}>
+            <View style={styles.heroBadgeRow}>
+              <View style={styles.heroStatusPill}>
+                <View style={styles.pulsingDot} />
+                <Text style={styles.heroStatusText}>Lectura en curso</Text>
               </View>
-            ) : (
-              seriesList.map((group) => (
-                <View key={group.seriesName} style={styles.sagaCard}>
-                  <View style={styles.sagaHeader}>
-                    <View>
-                      <Text style={styles.sagaName}>{group.seriesName}</Text>
-                      <Text style={styles.sagaCount}>
-                        {group.totalBooks}{' '}
-                        {group.totalBooks === 1
-                          ? 'tomo en tu biblioteca'
-                          : 'tomos en tu biblioteca'}
-                      </Text>
-                    </View>
-                    <View style={styles.sagaBadge}>
-                      <Text style={styles.sagaBadgeText}>Saga</Text>
-                    </View>
-                  </View>
 
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.sagaScroll}
-                  >
-                    {group.books.map((book) => (
-                      <Pressable
-                        key={book.id}
-                        onPress={() => router.push(`/book/${book.id}`)}
-                        style={styles.sagaBookCard}
-                      >
-                        {book.coverUri ? (
-                          <Image
-                            source={{ uri: book.coverUri }}
-                            style={styles.sagaCover}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View style={[styles.sagaCover, styles.coverFallback]}>
-                            <Bookmark size={20} color={colors.light.primary} />
-                            <Text style={styles.fallbackTitle} numberOfLines={2}>
-                              {book.title}
-                            </Text>
-                          </View>
-                        )}
-                        <Text style={styles.sagaBookIndex}>
-                          {book.seriesIndex !== null
-                            ? `#${book.seriesIndex}`
-                            : 'Tomo'}
-                        </Text>
-                        <Text style={styles.sagaBookTitle} numberOfLines={1}>
-                          {book.title}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </ScrollView>
-                </View>
-              ))
-            )}
-          </View>
-        ) : activeFilter === 'ESTANTERIAS' ? (
-          /* VISTA POR ESTANTERÍAS */
-          <View style={styles.shelvesContainer}>
-            <View style={styles.shelvesTopHeader}>
-              <View>
-                <Text style={styles.shelvesSectionTitle}>
-                  Muebles y Repisas Físicas
-                </Text>
-                <Text style={styles.shelvesSectionSubtitle}>
-                  Organización espacial de tus libros en casa
+              <View style={styles.formatBadge}>
+                {activeBook.modality === 'DIGITAL' ? (
+                  <Smartphone size={12} color={colors.light.textMuted} />
+                ) : (
+                  <BookOpen size={12} color={colors.light.textMuted} />
+                )}
+                <Text style={styles.formatBadgeText}>
+                  {activeBook.modality === 'DIGITAL' ? 'eBook Digital' : 'Libro Físico'}
                 </Text>
               </View>
-              {shelfModalReferenceBook ? (
-                <SafeButton
-                  size="sm"
-                  variant="outline"
-                  leftIcon={<MapPin size={14} color={colors.light.primary} />}
-                  title="Administrar estanterías"
-                  onPress={() => {
-                    setSelectedBookForShelves(shelfModalReferenceBook);
-                    setIsShelvesModalVisible(true);
-                  }}
+            </View>
+
+            <Pressable
+              onPress={() => router.push(`/book/${activeBook.id}`)}
+              style={styles.heroMainRow}
+            >
+              {activeBook.coverUri ? (
+                <Image
+                  source={{ uri: activeBook.coverUri }}
+                  style={styles.heroCover}
+                  resizeMode="cover"
                 />
-              ) : null}
-            </View>
+              ) : (
+                <View style={styles.heroCoverPlaceholder}>
+                  <BookOpen size={28} color={colors.light.primary} />
+                </View>
+              )}
 
-            {furnitureGroups.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Library size={40} color={colors.light.textMuted} />
-                <Text style={styles.emptyTitle}>
-                  No tienes estanterías físicas registradas
+              <View style={styles.heroInfoCol}>
+                <Text style={styles.heroTitle} numberOfLines={2}>
+                  {activeBook.title}
                 </Text>
-                <Text style={styles.emptySubtitle}>
-                  Crea tus muebles y baldas pulsando en Administrar estanterías o
-                  desde la ficha técnica de un libro físico.
+                <Text style={styles.heroAuthor} numberOfLines={1}>
+                  {parseFirstAuthor(activeBook.authorsJson)}
                 </Text>
-              </View>
-            ) : (
-              furnitureGroups.map((group) => (
-                <View key={group.furnitureName} style={styles.furnitureCard}>
-                  <View style={styles.furnitureHeader}>
-                    <View style={styles.furnitureTitleRow}>
-                      <Library size={18} color={colors.light.primary} />
-                      <Text style={styles.furnitureNameText}>
-                        {group.furnitureName}
-                      </Text>
-                    </View>
-                    <Text style={styles.furnitureCountText}>
-                      {group.totalBooks}{' '}
-                      {group.totalBooks === 1 ? 'libro' : 'libros'}
+
+                {/* Progreso */}
+                <View style={styles.heroProgressSection}>
+                  <View style={styles.heroProgressLabelRow}>
+                    <Text style={styles.heroProgressLabel}>
+                      Página {activeBook.currentPage ?? 0}
+                      {activeBook.pageCount > 0 ? ` de ${activeBook.pageCount}` : ''}
+                    </Text>
+                    <Text style={styles.heroProgressPercentage}>
+                      {activeBook.currentPercentage ?? 0}%
                     </Text>
                   </View>
 
-                  <View style={styles.compartmentsList}>
-                    {group.compartments.map((comp) => (
-                      <View key={comp.id} style={styles.compartmentCard}>
-                        <View style={styles.compartmentHeader}>
-                          <View
-                            style={[
-                              styles.compColorDot,
-                              { backgroundColor: comp.colorTag },
-                            ]}
-                          />
-                          <Text style={styles.compLevelText}>
-                            {comp.shelfLevel || 'Sin nivel'}
-                          </Text>
-                          <Text style={styles.compBookCountText}>
-                            ({comp.bookCount}{' '}
-                            {comp.bookCount === 1 ? 'ejemplar' : 'ejemplares'})
-                          </Text>
-                        </View>
-
-                        {comp.books.length > 0 ? (
-                          <ScrollView
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            style={styles.compBooksScroll}
-                          >
-                            {comp.books.map((b) => (
-                              <Pressable
-                                key={b.id}
-                                onPress={() => router.push(`/book/${b.id}`)}
-                                style={styles.shelfBookItem}
-                              >
-                                {b.coverUri ? (
-                                  <Image
-                                    source={{ uri: b.coverUri }}
-                                    style={styles.shelfBookCover}
-                                    resizeMode="cover"
-                                  />
-                                ) : (
-                                  <View
-                                    style={[
-                                      styles.shelfBookCover,
-                                      styles.coverFallback,
-                                    ]}
-                                  >
-                                    <Bookmark
-                                      size={18}
-                                      color={colors.light.primary}
-                                    />
-                                  </View>
-                                )}
-                                <Text
-                                  style={styles.shelfBookTitle}
-                                  numberOfLines={1}
-                                >
-                                  {b.title}
-                                </Text>
-                              </Pressable>
-                            ))}
-                          </ScrollView>
-                        ) : (
-                          <Text style={styles.emptyCompText}>
-                            Repisa sin libros asignados
-                          </Text>
-                        )}
-                      </View>
-                    ))}
+                  <View style={styles.heroProgressBarBg}>
+                    <View
+                      style={[
+                        styles.heroProgressBarFill,
+                        { width: `${Math.min(100, activeBook.currentPercentage ?? 0)}%` },
+                      ]}
+                    />
                   </View>
                 </View>
-              ))
-            )}
-
-            {/* Libros físicos sin estantería asignada */}
-            {unassignedPhysicalBooks.length > 0 ? (
-              <View style={styles.unassignedCard}>
-                <View style={styles.unassignedHeader}>
-                  <MapPin size={16} color={colors.light.accent} />
-                  <Text style={styles.unassignedTitle}>
-                    Libros físicos sin repisa asignada (
-                    {unassignedPhysicalBooks.length})
-                  </Text>
-                </View>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  style={styles.sagaScroll}
-                >
-                  {unassignedPhysicalBooks.map((b) => (
-                    <Pressable
-                      key={b.id}
-                      onPress={() => router.push(`/book/${b.id}`)}
-                      style={styles.shelfBookItem}
-                    >
-                      {b.coverUri ? (
-                        <Image
-                          source={{ uri: b.coverUri }}
-                          style={styles.shelfBookCover}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <View
-                          style={[styles.shelfBookCover, styles.coverFallback]}
-                        >
-                          <Bookmark size={18} color={colors.light.primary} />
-                        </View>
-                      )}
-                      <Text style={styles.shelfBookTitle} numberOfLines={1}>
-                        {b.title}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
               </View>
-            ) : null}
-          </View>
-        ) : activeFilter === 'WISHLIST' ? (
-          /* VISTA WISHLIST */
-          <View style={styles.wishlistSection}>
-            {/* Detector de Huecos en Sagas */}
-            {sagaGaps.length > 0 ? (
-              <View style={styles.sagaGapsCard}>
-                <View style={styles.sagaGapsHeader}>
-                  <ShieldAlert size={20} color={colors.light.accent} />
-                  <Text style={styles.sagaGapsTitle}>
-                    Huecos detectados en tus sagas
-                  </Text>
-                </View>
-                <Text style={styles.sagaGapsDescription}>
-                  Faltan tomos intermedios en tu biblioteca para completar estas
-                  sagas:
-                </Text>
+            </Pressable>
 
-                <View style={styles.sagaGapsList}>
-                  {sagaGaps.map((gap) => (
-                    <View key={gap.seriesName} style={styles.gapItemRow}>
-                      <Text style={styles.gapSeriesName}>
-                        {gap.seriesName}
-                      </Text>
-                      <Text style={styles.gapIndicesText}>
-                        Tomos faltantes: #{gap.missingIndices.join(', #')}
-                      </Text>
-                      {gap.wishlistMatches.length > 0 ? (
-                        <View style={styles.wishlistMatchBadge}>
-                          <Check size={12} color={colors.light.primary} />
-                          <Text style={styles.wishlistMatchText}>
-                            En tu lista de deseos:{' '}
-                            {gap.wishlistMatches
-                              .map((m) => `${m.title} (#${m.seriesIndex})`)
-                              .join(', ')}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : null}
+            {/* Acciones principales de 1 toque */}
+            <View style={styles.heroActionsRow}>
+              <SafeButton
+                onPress={() => setIsTimerModalVisible(true)}
+                style={styles.heroContinueButton}
+              >
+                <Play size={18} color="#ffffff" fill="#ffffff" />
+                <Text style={styles.heroContinueButtonText}>Continuar Leyendo</Text>
+              </SafeButton>
 
-            {/* Listado de libros en Wishlist */}
-            {wishlistBooks.length === 0 ? (
-              <View style={styles.emptyContainer}>
-                <Bookmark size={40} color={colors.light.textMuted} />
-                <Text style={styles.emptyTitle}>Tu lista de deseos está vacía</Text>
-                <Text style={styles.emptySubtitle}>
-                  Guarda libros que planeas comprar o leer en el futuro para dar
-                  seguimiento a tiendas y precios.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.wishlistGrid}>
-                {wishlistBooks.map((book) => {
-                  return (
-                    <View key={book.id} style={styles.wishlistBookCard}>
-                      <Pressable
-                        onPress={() => router.push(`/book/${book.id}`)}
-                        style={styles.wishlistCoverWrap}
-                      >
-                        {book.coverUri ? (
-                          <Image
-                            source={{ uri: book.coverUri }}
-                            style={styles.wishlistCover}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View
-                            style={[
-                              styles.wishlistCover,
-                              styles.coverFallback,
-                            ]}
-                          >
-                            <Bookmark size={24} color={colors.light.primary} />
-                          </View>
-                        )}
-                      </Pressable>
-
-                      <View style={styles.wishlistBookDetails}>
-                        <Pressable
-                          onPress={() => router.push(`/book/${book.id}`)}
-                        >
-                          <Text
-                            style={styles.wishlistBookTitle}
-                            numberOfLines={2}
-                          >
-                            {book.title}
-                          </Text>
-                          <Text
-                            style={styles.wishlistBookAuthor}
-                            numberOfLines={1}
-                          >
-                            {parseAuthors(book.authorsJson)}
-                          </Text>
-                        </Pressable>
-
-                        {book.seriesName ? (
-                          <Text
-                            style={styles.wishlistBookSeries}
-                            numberOfLines={1}
-                          >
-                            {book.seriesName}{' '}
-                            {book.seriesIndex ? `#${book.seriesIndex}` : ''}
-                          </Text>
-                        ) : null}
-
-                        {book.wishlistStoreNote ? (
-                          <View style={styles.storeNotePill}>
-                            <Tag size={11} color={colors.light.accent} />
-                            <Text
-                              style={styles.storeNoteText}
-                              numberOfLines={1}
-                            >
-                              {book.wishlistStoreNote}
-                            </Text>
-                          </View>
-                        ) : null}
-
-                        <SafeButton
-                          title="Ya lo compré"
-                          variant="primary"
-                          size="sm"
-                          leftIcon={<Check size={14} color="#FFFFFF" />}
-                          onPress={() => handleQuickBuyWishlistBook(book)}
-                          style={styles.buyButtonMargin}
-                        />
-                      </View>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
+              <Pressable
+                onPress={() => setIsManualModalVisible(true)}
+                style={styles.heroAdvanceButton}
+                accessibilityRole="button"
+                accessibilityLabel="Avanzar páginas manualmente"
+              >
+                <CheckCircle size={18} color={colors.light.primary} />
+                <Text style={styles.heroAdvanceButtonText}>Avanzar</Text>
+              </Pressable>
+            </View>
           </View>
         ) : (
-          /* GRID ESTÁNDAR DE LIBROS PROPIOS (TODOS, FÍSICOS O DIGITALES) */
-          <View style={styles.gridContainer}>
-            {filteredOwnedBooks.map((book) => {
-              const authorLabel = parseAuthors(book.authorsJson);
+          <View style={styles.idleCard}>
+            <View style={styles.idleIconCircle}>
+              <BookOpen size={28} color={colors.light.primary} />
+            </View>
+            <Text style={styles.idleTitle}>Tu mesita de noche está despejada</Text>
+            <Text style={styles.idleSubtitle}>
+              No tienes ninguna lectura en curso en este momento. Elige un libro de tu estantería o déjate guiar por la ruleta.
+            </Text>
 
-              return (
+            <View style={styles.idleButtonsRow}>
+              <SafeButton
+                onPress={() => setIsRouletteModalVisible(true)}
+                style={styles.idlePrimaryButton}
+              >
+                <Compass size={16} color="#ffffff" />
+                <Text style={styles.idlePrimaryButtonText}>Elegir qué leer hoy</Text>
+              </SafeButton>
+
+              <Pressable
+                onPress={() => router.push('/library')}
+                style={styles.idleSecondaryButton}
+              >
+                <Text style={styles.idleSecondaryButtonText}>Explorar mi librero</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* ACCIONES RÁPIDAS: Cuadrícula ergonómica de 4 atajos */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionHeaderTitle}>Acciones Rápidas</Text>
+        </View>
+
+        <View style={styles.shortcutsGrid}>
+          {/* Atajo 1: Avanzar Páginas */}
+          <Pressable
+            onPress={() => {
+              if (activeBook) {
+                setIsManualModalVisible(true);
+              } else {
+                Alert.alert(
+                  'Sin lectura activa',
+                  'Inicia la lectura de un libro desde tu estantería para registrar avances.'
+                );
+              }
+            }}
+            style={styles.shortcutCard}
+            accessibilityRole="button"
+          >
+            <View style={[styles.shortcutIconCircle, { backgroundColor: '#eef6f1' }]}>
+              <CheckSquare size={20} color={colors.light.primary} />
+            </View>
+            <Text style={styles.shortcutTitle}>Avanzar Páginas</Text>
+            <Text style={styles.shortcutSubtitle}>Registro manual</Text>
+          </Pressable>
+
+          {/* Atajo 2: Capturar Frase (OCR) */}
+          <Pressable
+            onPress={() => {
+              if (activeBook) {
+                router.push({
+                  pathname: '/book/[id]',
+                  params: { id: activeBook.id, openOcr: 'true' },
+                });
+              } else {
+                router.push('/library');
+              }
+            }}
+            style={styles.shortcutCard}
+            accessibilityRole="button"
+          >
+            <View style={[styles.shortcutIconCircle, { backgroundColor: '#fef3e7' }]}>
+              <Sparkles size={20} color="#b45309" />
+            </View>
+            <Text style={styles.shortcutTitle}>Capturar Frase</Text>
+            <Text style={styles.shortcutSubtitle}>Cita con cámara</Text>
+          </Pressable>
+
+          {/* Atajo 3: Libros Por Leer */}
+          <Pressable
+            onPress={() => {
+              router.push({
+                pathname: '/library',
+                params: { filter: 'WISHLIST' },
+              });
+            }}
+            style={styles.shortcutCard}
+            accessibilityRole="button"
+          >
+            <View style={[styles.shortcutIconCircle, { backgroundColor: '#eff6ff' }]}>
+              <Bookmark size={20} color="#2563eb" />
+            </View>
+            <Text style={styles.shortcutTitle}>Libros Por Leer</Text>
+            <Text style={styles.shortcutSubtitle}>Cola de pendientes</Text>
+          </Pressable>
+
+          {/* Atajo 4: Ruleta TBR */}
+          <Pressable
+            onPress={() => setIsRouletteModalVisible(true)}
+            style={styles.shortcutCard}
+            accessibilityRole="button"
+          >
+            <View style={[styles.shortcutIconCircle, { backgroundColor: '#fdf2f8' }]}>
+              <Compass size={20} color="#be185d" />
+            </View>
+            <Text style={styles.shortcutTitle}>¿Qué leo hoy?</Text>
+            <Text style={styles.shortcutSubtitle}>Sugerencia al azar</Text>
+          </Pressable>
+        </View>
+
+        {/* WIDGET DE RACHA Y TIEMPO DE HOY */}
+        <Pressable
+          onPress={() => router.push('/stats')}
+          style={styles.streakWidgetCard}
+          accessibilityRole="button"
+          accessibilityLabel="Ver estadísticas detalladas de lectura"
+        >
+          <View style={styles.streakLeftCol}>
+            <View style={styles.streakIconCircle}>
+              <Flame size={22} color="#ea580c" />
+            </View>
+            <View style={styles.streakTextCol}>
+              <Text style={styles.streakTitle}>
+                {streakInfo.currentStreakDays > 0
+                  ? `${streakInfo.currentStreakDays} días seguidos`
+                  : 'Comienza tu racha hoy'}
+              </Text>
+              <Text style={styles.streakSubtitle}>
+                {todayStats.minutes > 0
+                  ? `${todayStats.minutes} min leídos hoy · ${todayStats.pages} páginas`
+                  : 'Registra una sesión de lectura hoy para sumar a tu racha'}
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={18} color={colors.light.textMuted} />
+        </Pressable>
+
+        {/* ALERTA DE PRÉSTAMOS ACTIVOS (Condicional) */}
+        {activeLoansList.length > 0 && (
+          <Pressable
+            onPress={() => router.push('/library')}
+            style={styles.loansAlertCard}
+            accessibilityRole="button"
+          >
+            <View style={styles.loansAlertLeft}>
+              <BookMarked size={20} color="#b45309" />
+              <View style={styles.loansAlertTextCol}>
+                <Text style={styles.loansAlertTitle}>
+                  {activeLoansList.length === 1
+                    ? 'Tienes 1 libro prestado'
+                    : `Tienes ${activeLoansList.length} libros prestados`}
+                </Text>
+                <Text style={styles.loansAlertSubtitle}>
+                  {activeLoansList[0].borrowerName
+                    ? `Prestado a ${activeLoansList[0].borrowerName}`
+                    : 'Revisa tus préstamos activos en tu estantería'}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={18} color="#b45309" />
+          </Pressable>
+        )}
+
+        {/* SECCIÓN: EN MI MESITA DE NOCHE */}
+        {bedsideBooks.length > 0 && (
+          <View style={styles.bedsideSection}>
+            <View style={styles.sectionHeaderRow}>
+              <Text style={styles.sectionHeaderTitle}>En mi mesita de noche</Text>
+              <Pressable
+                onPress={() => router.push('/library')}
+                style={styles.seeAllButton}
+              >
+                <Text style={styles.seeAllButtonText}>Ver todo</Text>
+                <ArrowRight size={14} color={colors.light.primary} />
+              </Pressable>
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.bedsideScroll}
+            >
+              {bedsideBooks.map((book) => (
                 <Pressable
                   key={book.id}
                   onPress={() => router.push(`/book/${book.id}`)}
-                  style={styles.bookCard}
+                  style={styles.bedsideBookCard}
                 >
-                  <View style={styles.coverWrapper}>
-                    {book.coverUri ? (
-                      <Image
-                        source={{ uri: book.coverUri }}
-                        style={styles.coverImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={[styles.coverImage, styles.coverFallback]}>
-                        <Bookmark size={28} color={colors.light.primary} />
-                        <Text style={styles.fallbackTitle} numberOfLines={3}>
-                          {book.title}
-                        </Text>
-                      </View>
-                    )}
-
-                    {/* Cintillo de préstamo activo (LENT_OUT / BORROWED_IN) */}
-                    {activeLoansMap[book.id] ? (
-                      <LoanCoverRibbon loan={activeLoansMap[book.id]} />
-                    ) : null}
-
-                    {/* Badge de Modalidad (Físico / Digital) */}
-                    <View style={styles.modalityBadge}>
-                      {book.modality === 'PHYSICAL' ? (
-                        <BookOpen size={12} color="#FFFFFF" />
-                      ) : (
-                        <Smartphone size={12} color="#FFFFFF" />
-                      )}
+                  {book.coverUri ? (
+                    <Image
+                      source={{ uri: book.coverUri }}
+                      style={styles.bedsideBookCover}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.bedsideBookCoverPlaceholder}>
+                      <BookOpen size={20} color={colors.light.primary} />
                     </View>
-                  </View>
-
-                  <Text style={styles.bookTitle} numberOfLines={2}>
+                  )}
+                  <Text style={styles.bedsideBookTitle} numberOfLines={1}>
                     {book.title}
                   </Text>
-                  <Text style={styles.bookAuthor} numberOfLines={1}>
-                    {authorLabel}
+                  <Text style={styles.bedsideBookAuthor} numberOfLines={1}>
+                    {parseFirstAuthor(book.authorsJson)}
                   </Text>
-                  {book.publisher ? (
-                    <Text style={styles.bookPublisher} numberOfLines={1}>
-                      {book.publisher}
-                    </Text>
-                  ) : null}
+                  <Text style={styles.bedsideBookStatus}>
+                    {book.currentStatus === 'LEYENDO'
+                      ? `${book.currentPercentage ?? 0}% leído`
+                      : 'Por leer'}
+                  </Text>
                 </Pressable>
-              );
-            })}
+              ))}
+            </ScrollView>
           </View>
         )}
       </ScrollView>
 
-      {/* Modal de Ruleta TBR */}
+      {/* MODALES DEL DASHBOARD */}
+
+      {/* Modal 1: Cronómetro en tiempo real */}
+      {activeBook && (
+        <ReadingTimerModal
+          visible={isTimerModalVisible}
+          book={activeBook}
+          userAverageSpeed={readerVelocity.pagesPerHour}
+          onClose={() => setIsTimerModalVisible(false)}
+          onSaveSession={handleSaveTimedSession}
+        />
+      )}
+
+      {/* Modal 2: Registro de avance manual */}
+      {activeBook && (
+        <ManualReadingLogModal
+          visible={isManualModalVisible}
+          book={activeBook}
+          onClose={() => setIsManualModalVisible(false)}
+          onSaveProgress={handleSaveManualProgress}
+        />
+      )}
+
+      {/* Modal 3: Ruleta TBR */}
       <TbrRouletteModal
-        visible={isTbrModalVisible}
+        visible={isRouletteModalVisible}
         eligibleBooks={tbrCandidates.eligible}
         blockedSequels={tbrCandidates.blockedSequels}
         shelves={shelvesList}
@@ -917,549 +635,448 @@ export default function LibraryScreen() {
         lengthFilter={rouletteLength}
         onChangeModality={setRouletteModality}
         onChangeLength={setRouletteLength}
-        onClose={() => setIsTbrModalVisible(false)}
+        onClose={() => setIsRouletteModalVisible(false)}
         onStartReadingWinner={handleStartReadingWinner}
       />
 
-      {/* Modal de Gestión de Estanterías */}
-      {shelfModalReferenceBook ? (
-        <ShelvesManagerModal
-          visible={isShelvesModalVisible}
-          book={shelfModalReferenceBook}
-          shelves={shelvesList}
-          onClose={() => setIsShelvesModalVisible(false)}
-          onAssignPhysicalShelf={async (shelfId) => {
-            if (shelfModalReferenceBook) {
-              await ShelvesRepository.assignBookToShelf(
-                shelfModalReferenceBook.id,
-                shelfId
-              );
-              await loadData();
-            }
-          }}
-          onAssignDigitalCollection={async (collection: DigitalCollectionKey) => {
-            if (shelfModalReferenceBook) {
-              await BooksRepository.update(shelfModalReferenceBook.id, {
-                format: collection,
-                shelfId: null,
-              });
-              await loadData();
-            }
-          }}
-          onCreateShelf={async (data) => {
-            await ShelvesRepository.create(data);
-            await loadData();
-          }}
-          onRemoveFromShelf={async () => {
-            if (shelfModalReferenceBook) {
-              await ShelvesRepository.assignBookToShelf(
-                shelfModalReferenceBook.id,
-                null
-              );
-              await loadData();
-            }
-          }}
-        />
-      ) : null}
-
-      {/* Modal de Respaldo en la Nube, Libros Pendientes, Importar y Privacidad */}
+      {/* Modal 4: Respaldo y Configuración */}
       <CloudSyncAndSettingsModal
         visible={isCloudModalVisible}
         onClose={() => setIsCloudModalVisible(false)}
         backupSummary={{
-          booksCount: ownedBooks.length,
-          sessionsCount: completedLogs.length,
+          booksCount: booksList.length,
+          sessionsCount: sessionsList.length,
           quotesCount: 0,
         }}
-        pendingOfflineBooksCount={pendingOfflineCount}
-        onWipeAllData={async () => {
-          await wipeAllUserDataPermanently();
-          setIsCloudModalVisible(false);
-          await loadData();
-        }}
+        onWipeAllData={handleWipeAllData}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
     backgroundColor: colors.light.background,
   },
-  header: {
+  headerContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
-  headerTitleCol: {
+  greetingCol: {
     flex: 1,
-    marginRight: 8,
+    marginRight: 12,
   },
-  headerTitle: {
-    fontSize: 26,
+  greetingTitle: {
+    fontSize: 24,
     fontWeight: '800',
     color: colors.light.text,
-    letterSpacing: -0.5,
+    letterSpacing: -0.3,
   },
-  headerSubtitle: {
-    fontSize: 12,
+  greetingSubtitle: {
+    fontSize: 13,
     color: colors.light.textMuted,
     marginTop: 2,
     fontWeight: '500',
   },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  filtersWrapper: {
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.light.borderSubtle,
-  },
-  filterPills: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 7,
-    paddingHorizontal: 14,
+  headerIconButton: {
+    width: 40,
+    height: 40,
     borderRadius: 20,
     backgroundColor: colors.light.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.light.border,
-  },
-  pillActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.light.textMuted,
-  },
-  pillTextActive: {
-    color: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  heroCard: {
+    backgroundColor: colors.light.surface,
+    borderRadius: 20,
     padding: 16,
-    paddingBottom: 40,
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 16,
-  },
-  bookCard: {
-    width: COLUMN_WIDTH,
-    marginBottom: 8,
-  },
-  coverWrapper: {
-    width: COLUMN_WIDTH,
-    height: COLUMN_WIDTH * 1.5,
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: colors.light.surfaceAlt,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.light.border,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-    position: 'relative',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  coverImage: {
-    width: '100%',
-    height: '100%',
+  heroBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
-  coverFallback: {
+  heroStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#eef6f1',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 6,
+  },
+  pulsingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.light.primary,
+  },
+  heroStatusText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.light.primary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  formatBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  formatBadgeText: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: colors.light.textMuted,
+  },
+  heroMainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  heroCover: {
+    width: 68,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.light.surfaceAlt,
+  },
+  heroCoverPlaceholder: {
+    width: 68,
+    height: 100,
+    borderRadius: 8,
+    backgroundColor: colors.light.surfaceAlt,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F2EDE4',
   },
-  fallbackTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.light.text,
-    textAlign: 'center',
-    marginTop: 8,
+  heroInfoCol: {
+    flex: 1,
+    marginLeft: 14,
   },
-  modalityBadge: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    backgroundColor: 'rgba(30, 70, 53, 0.85)',
-    padding: 4,
-    borderRadius: 6,
-  },
-  bookTitle: {
-    fontSize: 14,
+  heroTitle: {
+    fontSize: 16,
     fontWeight: '700',
     color: colors.light.text,
-    marginTop: 8,
-    lineHeight: 18,
+    lineHeight: 22,
   },
-  bookAuthor: {
-    fontSize: 12,
+  heroAuthor: {
+    fontSize: 13,
     color: colors.light.textMuted,
     marginTop: 2,
-  },
-  bookPublisher: {
-    fontSize: 11,
-    color: colors.light.accent,
     fontWeight: '500',
-    marginTop: 1,
   },
-  emptyContainer: {
+  heroProgressSection: {
+    marginTop: 10,
+  },
+  heroProgressLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  heroProgressLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: colors.light.textMuted,
+  },
+  heroProgressPercentage: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.light.primary,
+  },
+  heroProgressBarBg: {
+    height: 6,
+    backgroundColor: colors.light.border,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  heroProgressBarFill: {
+    height: '100%',
+    backgroundColor: colors.light.primary,
+    borderRadius: 3,
+  },
+  heroActionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  heroContinueButton: {
+    flex: 1,
+    backgroundColor: colors.light.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
-    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 14,
+    gap: 8,
   },
-  emptyIconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+  heroContinueButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  heroAdvanceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.light.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.light.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.light.text,
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: colors.light.textMuted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  emptyButton: {
-    minWidth: 200,
-  },
-  sagasContainer: {
-    gap: 20,
-  },
-  sagaCard: {
-    backgroundColor: colors.light.surface,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderRadius: 14,
-    padding: 16,
+    gap: 6,
+  },
+  heroAdvanceButtonText: {
+    color: colors.light.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  idleCard: {
+    backgroundColor: colors.light.surface,
+    borderRadius: 20,
+    padding: 24,
+    marginBottom: 20,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.light.border,
   },
-  sagaHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+  idleIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#eef6f1',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  sagaName: {
+  idleTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: colors.light.text,
+    textAlign: 'center',
+    marginBottom: 6,
   },
-  sagaCount: {
-    fontSize: 12,
+  idleSubtitle: {
+    fontSize: 13,
     color: colors.light.textMuted,
-    marginTop: 2,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
   },
-  sagaBadge: {
-    backgroundColor: colors.light.badgeBg,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-  },
-  sagaBadgeText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.light.badgeText,
-  },
-  sagaScroll: {
-    marginTop: 4,
-  },
-  sagaBookCard: {
-    width: 104,
-    marginRight: 12,
-  },
-  sagaCover: {
-    width: 104,
-    height: 156,
-    borderRadius: 8,
-    backgroundColor: colors.light.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.light.border,
-  },
-  sagaBookIndex: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.light.primary,
-    marginTop: 6,
-  },
-  sagaBookTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.light.text,
-    marginTop: 2,
-  },
-  shelvesContainer: {
-    gap: 16,
-  },
-  shelvesTopHeader: {
+  idleButtonsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  shelvesSectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.light.text,
-  },
-  shelvesSectionSubtitle: {
-    fontSize: 12,
-    color: colors.light.textMuted,
-  },
-  furnitureCard: {
-    backgroundColor: colors.light.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.light.border,
-    gap: 12,
-  },
-  furnitureHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  furnitureTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  furnitureNameText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.light.text,
-  },
-  furnitureCountText: {
-    fontSize: 12,
-    color: colors.light.textMuted,
-    fontWeight: '600',
-  },
-  compartmentsList: {
     gap: 10,
   },
-  compartmentCard: {
-    backgroundColor: colors.light.surfaceAlt,
-    borderRadius: 10,
-    padding: 10,
-    gap: 8,
-  },
-  compartmentHeader: {
+  idlePrimaryButton: {
+    backgroundColor: colors.light.primary,
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
     gap: 6,
   },
-  compColorDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  compLevelText: {
+  idlePrimaryButtonText: {
+    color: '#ffffff',
     fontSize: 13,
     fontWeight: '700',
-    color: colors.light.text,
   },
-  compBookCountText: {
-    fontSize: 11,
-    color: colors.light.textMuted,
-  },
-  compBooksScroll: {
-    marginTop: 4,
-  },
-  emptyCompText: {
-    fontSize: 12,
-    color: colors.light.textMuted,
-    fontStyle: 'italic',
-    paddingVertical: 4,
-  },
-  shelfBookItem: {
-    width: 80,
-    marginRight: 10,
-  },
-  shelfBookCover: {
-    width: 80,
-    height: 120,
-    borderRadius: 6,
-    backgroundColor: colors.light.surface,
+  idleSecondaryButton: {
+    backgroundColor: colors.light.surfaceAlt,
     borderWidth: 1,
     borderColor: colors.light.border,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    justifyContent: 'center',
   },
-  shelfBookTitle: {
-    fontSize: 11,
+  idleSecondaryButtonText: {
     color: colors.light.text,
+    fontSize: 13,
     fontWeight: '600',
-    marginTop: 4,
   },
-  unassignedCard: {
-    backgroundColor: colors.light.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: colors.light.border,
-    gap: 10,
-  },
-  unassignedHeader: {
+  sectionHeaderRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 6,
+    marginBottom: 12,
   },
-  unassignedTitle: {
-    fontSize: 14,
+  sectionHeaderTitle: {
+    fontSize: 16,
     fontWeight: '700',
-    color: colors.light.accent,
+    color: colors.light.text,
   },
-  wishlistSection: {
-    gap: 16,
+  shortcutsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 20,
   },
-  sagaGapsCard: {
-    backgroundColor: '#FFF7F4',
-    borderRadius: 14,
+  shortcutCard: {
+    width: (width - 50) / 2,
+    backgroundColor: colors.light.surface,
+    borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.light.accent,
-    gap: 8,
+    borderColor: colors.light.border,
   },
-  sagaGapsHeader: {
-    flexDirection: 'row',
+  shortcutIconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 10,
   },
-  sagaGapsTitle: {
+  shortcutTitle: {
     fontSize: 14,
-    fontWeight: '700',
-    color: colors.light.accent,
-  },
-  sagaGapsDescription: {
-    fontSize: 12,
-    color: colors.light.textMuted,
-    lineHeight: 16,
-  },
-  sagaGapsList: {
-    gap: 8,
-    marginTop: 4,
-  },
-  gapItemRow: {
-    backgroundColor: colors.light.surface,
-    borderRadius: 8,
-    padding: 10,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.light.borderSubtle,
-  },
-  gapSeriesName: {
-    fontSize: 13,
     fontWeight: '700',
     color: colors.light.text,
   },
-  gapIndicesText: {
-    fontSize: 12,
-    color: colors.light.accent,
-    fontWeight: '600',
-  },
-  wishlistMatchBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.light.badgeBg,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+  shortcutSubtitle: {
+    fontSize: 11,
+    color: colors.light.textMuted,
     marginTop: 2,
   },
-  wishlistMatchText: {
-    fontSize: 11,
-    color: colors.light.primary,
-    fontWeight: '600',
-  },
-  wishlistGrid: {
-    gap: 12,
-  },
-  wishlistBookCard: {
-    flexDirection: 'row',
+  streakWidgetCard: {
     backgroundColor: colors.light.surface,
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: colors.light.border,
-    gap: 12,
-  },
-  wishlistCoverWrap: {
-    width: 72,
-    height: 108,
-  },
-  wishlistCover: {
-    width: 72,
-    height: 108,
-    borderRadius: 6,
-    backgroundColor: colors.light.surfaceAlt,
-    borderWidth: 1,
-    borderColor: colors.light.border,
-  },
-  wishlistBookDetails: {
-    flex: 1,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    marginBottom: 16,
   },
-  wishlistBookTitle: {
+  streakLeftCol: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  streakIconCircle: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#fff7ed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  streakTextCol: {
+    flex: 1,
+  },
+  streakTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.light.text,
   },
-  wishlistBookAuthor: {
+  streakSubtitle: {
+    fontSize: 11,
+    color: colors.light.textMuted,
+    marginTop: 2,
+  },
+  loansAlertCard: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+    marginBottom: 16,
+  },
+  loansAlertLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 8,
+  },
+  loansAlertTextCol: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  loansAlertTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  loansAlertSubtitle: {
+    fontSize: 11,
+    color: '#b45309',
+    marginTop: 2,
+  },
+  bedsideSection: {
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  seeAllButtonText: {
     fontSize: 12,
+    fontWeight: '600',
+    color: colors.light.primary,
+  },
+  bedsideScroll: {
+    gap: 12,
+    paddingRight: 20,
+  },
+  bedsideBookCard: {
+    width: 100,
+  },
+  bedsideBookCover: {
+    width: 100,
+    height: 140,
+    borderRadius: 8,
+    backgroundColor: colors.light.surfaceAlt,
+    marginBottom: 6,
+  },
+  bedsideBookCoverPlaceholder: {
+    width: 100,
+    height: 140,
+    borderRadius: 8,
+    backgroundColor: colors.light.surfaceAlt,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  bedsideBookTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.light.text,
+  },
+  bedsideBookAuthor: {
+    fontSize: 11,
     color: colors.light.textMuted,
     marginTop: 1,
   },
-  wishlistBookSeries: {
-    fontSize: 11,
-    color: colors.light.accent,
+  bedsideBookStatus: {
+    fontSize: 10,
     fontWeight: '600',
+    color: colors.light.primary,
     marginTop: 2,
-  },
-  storeNotePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#FFF5F0',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  storeNoteText: {
-    fontSize: 11,
-    color: colors.light.accent,
-    fontWeight: '600',
-  },
-  buyButtonMargin: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
   },
 });

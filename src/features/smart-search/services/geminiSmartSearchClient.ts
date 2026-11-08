@@ -209,7 +209,7 @@ const DEMO_LITERARY_KNOWLEDGE_BASE: DemoBookEntry[] = [
  */
 export class GeminiSmartSearchClient {
   private static readonly OFFICIAL_GEMINI_ENDPOINT =
-    'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+    'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent';
 
   /**
    * Resuelve candidatos heurísticos realistas validados por Zod cuando la app corre

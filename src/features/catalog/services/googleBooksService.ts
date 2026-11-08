@@ -8,9 +8,16 @@ export class GoogleBooksService {
   /**
    * Consulta Google Books API por ISBN-13 o ISBN-10 con validación Zod y timeout de red.
    */
-  static async searchByIsbn(isbn: string, timeoutMs: number = 4000): Promise<NormalizedBookCandidate | null> {
+  static async searchByIsbn(isbn: string, timeoutMs: number = 6000): Promise<NormalizedBookCandidate | null> {
     const cleanIsbn = isbn.replace(/[-\s]/g, '');
-    const url = `${this.BASE_URL}?q=isbn:${cleanIsbn}`;
+    const apiKey =
+      typeof process !== 'undefined' && process.env
+        ? process.env.EXPO_PUBLIC_GOOGLE_BOOKS_API_KEY
+        : undefined;
+
+    const url = apiKey
+      ? `${this.BASE_URL}?q=isbn:${cleanIsbn}&key=${encodeURIComponent(apiKey)}`
+      : `${this.BASE_URL}?q=isbn:${cleanIsbn}`;
 
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -58,11 +65,13 @@ export class GoogleBooksService {
         subtitle: info.subtitle ? normalizeTitle(info.subtitle) : undefined,
         authors: info.authors && info.authors.length > 0 ? info.authors : ['Autor desconocido'],
         publisher: info.publisher?.trim(),
-        description: info.description?.trim(),
+        description: info.description,
         coverUri: ensureHttpsCoverUrl(cover),
         pageCount: Math.max(0, info.pageCount || 0),
         language: info.language || 'es',
-        publishedYear: info.publishedDate ? parseInt(info.publishedDate.substring(0, 4), 10) || undefined : undefined,
+        publishedYear: info.publishedDate
+          ? parseInt(info.publishedDate.substring(0, 4), 10) || undefined
+          : undefined,
         source: 'GOOGLE_BOOKS',
       };
     } catch {

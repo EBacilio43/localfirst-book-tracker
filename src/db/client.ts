@@ -23,12 +23,143 @@ export function getDbConnection(): {
   expoDbInstance.execSync('PRAGMA journal_mode = WAL;');
   expoDbInstance.execSync('PRAGMA foreign_keys = ON;');
 
-  // 2. Inicializar FTS5 para búsqueda instantánea en español (remueve diacríticos)
+  // 2. Crear tablas relacionales si es la primera ejecución
+  initCoreSchema(expoDbInstance);
+
+  // 3. Inicializar FTS5 para búsqueda instantánea en español (remueve diacríticos)
   initFts5SearchIndex(expoDbInstance);
 
   drizzleDbInstance = drizzle(expoDbInstance, { schema });
 
   return { db: drizzleDbInstance, rawDb: expoDbInstance };
+}
+
+/**
+ * Inicializa las tablas del esquema relacional en SQLite si no existen.
+ */
+function initCoreSchema(sqlite: SQLiteDatabase) {
+  try {
+    sqlite.execSync(`
+      CREATE TABLE IF NOT EXISTS books (
+        id TEXT PRIMARY KEY NOT NULL,
+        isbn13 TEXT,
+        isbn10 TEXT,
+        title TEXT NOT NULL,
+        subtitle TEXT,
+        series_name TEXT,
+        series_index REAL,
+        authors_json TEXT DEFAULT '[]' NOT NULL,
+        translator TEXT,
+        publisher TEXT,
+        description TEXT,
+        cover_uri TEXT,
+        page_count INTEGER DEFAULT 0 NOT NULL,
+        modality TEXT DEFAULT 'PHYSICAL' NOT NULL,
+        ownership TEXT DEFAULT 'OWNED' NOT NULL,
+        metadata_status TEXT DEFAULT 'COMPLETE' NOT NULL,
+        format TEXT,
+        progress_mode TEXT DEFAULT 'PAGES' NOT NULL,
+        language TEXT DEFAULT 'es' NOT NULL,
+        current_status TEXT DEFAULT 'POR_LEER' NOT NULL,
+        current_page INTEGER DEFAULT 0 NOT NULL,
+        current_percentage REAL DEFAULT 0 NOT NULL,
+        rating REAL,
+        pause_or_dnf_note TEXT,
+        is_spoiler INTEGER DEFAULT 0 NOT NULL,
+        shelf_id TEXT,
+        wishlist_store_note TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS shelves (
+        id TEXT PRIMARY KEY NOT NULL,
+        furniture_name TEXT NOT NULL,
+        shelf_level TEXT,
+        color_tag TEXT DEFAULT '#1E4635' NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS reading_sessions (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        start_page INTEGER DEFAULT 0 NOT NULL,
+        end_page INTEGER DEFAULT 0 NOT NULL,
+        pages_read INTEGER DEFAULT 0 NOT NULL,
+        duration_seconds INTEGER DEFAULT 0 NOT NULL,
+        started_at_epoch_ms INTEGER NOT NULL,
+        local_date TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS reading_logs (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        read_number INTEGER DEFAULT 1 NOT NULL,
+        started_at INTEGER,
+        finished_at INTEGER,
+        rating REAL,
+        review TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS book_quotes (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        entry_type TEXT DEFAULT 'QUOTE' NOT NULL,
+        content TEXT NOT NULL,
+        page_number INTEGER,
+        chapter_or_section TEXT,
+        personal_note TEXT,
+        highlight_color TEXT DEFAULT '#F3E8CB' NOT NULL,
+        is_spoiler INTEGER DEFAULT 0 NOT NULL,
+        is_favorite INTEGER DEFAULT 0 NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS book_loans (
+        id TEXT PRIMARY KEY NOT NULL,
+        book_id TEXT NOT NULL,
+        loan_direction TEXT DEFAULT 'LENT_OUT' NOT NULL,
+        borrower_name TEXT NOT NULL,
+        borrower_contact TEXT,
+        loaned_at INTEGER NOT NULL,
+        due_date INTEGER,
+        returned_at INTEGER,
+        notification_id TEXT,
+        notes TEXT,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON UPDATE NO ACTION ON DELETE CASCADE
+      );
+
+      CREATE TABLE IF NOT EXISTS reading_goals (
+        id TEXT PRIMARY KEY NOT NULL,
+        period_type TEXT NOT NULL,
+        year INTEGER NOT NULL,
+        month INTEGER,
+        target_books INTEGER DEFAULT 0 NOT NULL,
+        target_pages INTEGER DEFAULT 0 NOT NULL,
+        target_minutes_per_day INTEGER DEFAULT 0 NOT NULL,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_books_isbn13 ON books(isbn13);
+      CREATE INDEX IF NOT EXISTS idx_books_status ON books(current_status);
+      CREATE INDEX IF NOT EXISTS idx_reading_sessions_book_id ON reading_sessions(book_id);
+      CREATE INDEX IF NOT EXISTS idx_book_quotes_book_id ON book_quotes(book_id);
+      CREATE INDEX IF NOT EXISTS idx_book_loans_book_id ON book_loans(book_id);
+    `);
+  } catch (error) {
+    console.error('[SQLite] Error al inicializar el esquema base:', error);
+  }
 }
 
 /**

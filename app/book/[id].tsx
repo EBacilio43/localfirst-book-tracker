@@ -27,7 +27,10 @@ import {
   Clock,
   Award,
   ArrowLeftRight,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react-native';
+import { CatalogResolver } from '@/features/catalog/services/catalogResolver';
 import { BooksRepository } from '@/db/repositories/booksRepository';
 import { ReadingLogsRepository } from '@/db/repositories/readingLogsRepository';
 import { ReadingSessionsRepository } from '@/db/repositories/readingSessionsRepository';
@@ -478,6 +481,66 @@ export default function BookDetailScreen() {
     );
   };
 
+  // Reintentar sincronización de metadatos para libros guardados sin conexión
+  const handleRetrySyncMetadata = async () => {
+    if (!book || !book.isbn13) {
+      Alert.alert(
+        'Aviso',
+        'Este libro no cuenta con un código ISBN para buscar su información en los catálogos.'
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const result = await CatalogResolver.resolveByIsbn(book.isbn13);
+      if (result.success && result.book) {
+        const finalCover =
+          result.book.coverUri ||
+          (book.coverUri?.includes('books.google.com/books/content')
+            ? null
+            : book.coverUri);
+
+        const finalPublisher =
+          result.book.publisher &&
+          result.book.publisher !== 'Editorial no especificada'
+            ? result.book.publisher
+            : book.publisher !== 'Editorial no especificada'
+            ? book.publisher
+            : null;
+
+        await BooksRepository.update(book.id, {
+          title: result.book.title,
+          subtitle: result.book.subtitle,
+          authorsJson: JSON.stringify(result.book.authors),
+          publisher: finalPublisher,
+          description: result.book.description || book.description,
+          coverUri: finalCover,
+          pageCount:
+            result.book.pageCount > 0 ? result.book.pageCount : book.pageCount,
+          metadataStatus: 'COMPLETE',
+        });
+        await loadBookData();
+        Alert.alert(
+          'Información actualizada',
+          `Se han completado los datos de "${result.book.title}" exitosamente.`
+        );
+      } else {
+        Alert.alert(
+          'Sin resultados',
+          'No se encontró información para este ISBN en los catálogos en este momento. Verifica tu conexión.'
+        );
+      }
+    } catch {
+      Alert.alert(
+        'Error',
+        'No fue posible consultar los catálogos en este momento.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isRereadInProgress = useMemo(() => {
     if (!book) return false;
     return (
@@ -549,15 +612,29 @@ export default function BookDetailScreen() {
           <ArrowLeft size={22} color={colors.light.text} />
         </Pressable>
 
-        <Pressable
-          onPress={confirmDelete}
-          hitSlop={12}
-          style={styles.iconButton}
-          accessibilityRole="button"
-          accessibilityLabel="Eliminar libro"
-        >
-          <Trash2 size={20} color={colors.light.danger} />
-        </Pressable>
+        <View style={styles.topBarActions}>
+          {book.isbn13 ? (
+            <Pressable
+              onPress={handleRetrySyncMetadata}
+              hitSlop={12}
+              style={styles.iconButton}
+              accessibilityRole="button"
+              accessibilityLabel="Sincronizar información desde catálogos"
+            >
+              <RefreshCw size={19} color={colors.light.textMuted} />
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={confirmDelete}
+            hitSlop={12}
+            style={styles.iconButton}
+            accessibilityRole="button"
+            accessibilityLabel="Eliminar libro"
+          >
+            <Trash2 size={20} color={colors.light.danger} />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -636,6 +713,33 @@ export default function BookDetailScreen() {
             ) : null}
           </View>
         </View>
+
+        {/* Aviso de libro guardado sin conexion con boton de sincronizacion */}
+        {book.metadataStatus === 'PENDING_OFFLINE_SYNC' ||
+        book.title === 'Libro sin conexión' ? (
+          <View style={styles.offlineNoticeCard}>
+            <View style={styles.offlineNoticeHeader}>
+              <AlertCircle size={20} color={colors.light.warning} />
+              <View style={styles.offlineNoticeTextCol}>
+                <Text style={styles.offlineNoticeTitle}>
+                  Información pendiente de sincronizar
+                </Text>
+                <Text style={styles.offlineNoticeSubtitle}>
+                  Este libro se guardó sin conexión. Puedes actualizar sus datos y portada ahora.
+                </Text>
+              </View>
+            </View>
+            <SafeButton
+              onPress={handleRetrySyncMetadata}
+              style={styles.retrySyncButton}
+            >
+              <RefreshCw size={14} color="#ffffff" />
+              <Text style={styles.retrySyncButtonText}>
+                Sincronizar información ahora
+              </Text>
+            </SafeButton>
+          </View>
+        ) : null}
 
         {/* Sección Especial si es Lista de Deseos */}
         {isWishlist ? (
@@ -1099,6 +1203,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.light.borderSubtle,
   },
+  topBarActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   iconButton: {
     padding: 8,
     borderRadius: 8,
@@ -1485,5 +1594,48 @@ const styles = StyleSheet.create({
   },
   etaCardWrapper: {
     marginBottom: 14,
+  },
+  offlineNoticeCard: {
+    backgroundColor: '#fffbeb',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+  },
+  offlineNoticeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  offlineNoticeTextCol: {
+    flex: 1,
+  },
+  offlineNoticeTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400e',
+  },
+  offlineNoticeSubtitle: {
+    fontSize: 12,
+    color: '#b45309',
+    marginTop: 2,
+  },
+  retrySyncButton: {
+    backgroundColor: colors.light.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    gap: 6,
+  },
+  retrySyncButtonText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
